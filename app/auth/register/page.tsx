@@ -70,13 +70,13 @@ export default function RegisterPage() {
 
             <div>
               <Label htmlFor="accountType">Account Type</Label>
-              <Select name="accountType" defaultValue="customer" required>
+              <Select name="accountType" defaultValue="Customer - Post Jobs" required>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="customer">Customer - Post Jobs</SelectItem>
-                  <SelectItem value="dealer">Dealer - Apply to Jobs</SelectItem>
+                  <SelectItem value="Customer - Post Jobs">Customer - Post Jobs</SelectItem>
+                  <SelectItem value="Dealer - Apply for Jobs">Dealer - Apply for Jobs</SelectItem>
                 </SelectContent>
               </Select>
             </div>
