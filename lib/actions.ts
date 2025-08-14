@@ -1,6 +1,7 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 export async function signIn(prevState: any, formData: FormData) {
@@ -15,7 +16,8 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -27,7 +29,8 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    redirect("/dashboard")
+    // Return success instead of redirecting directly
+    return { success: true }
   } catch (error) {
     console.error("Login error:", error)
     return { error: "An unexpected error occurred. Please try again." }
@@ -50,22 +53,17 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "All required fields must be filled" }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
       options: {
         emailRedirectTo:
           process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
           `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
-        data: {
-          first_name: firstName.toString(),
-          last_name: lastName.toString(),
-          phone: phone?.toString() || "",
-          role: role.toString(),
-        },
       },
     })
 
@@ -76,6 +74,23 @@ export async function signUp(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
+    // If user was created, add them to the users table
+    if (data.user) {
+      const { error: insertError } = await supabase.from("users").insert({
+        id: data.user.id,
+        email: email.toString(),
+        first_name: firstName.toString(),
+        last_name: lastName.toString(),
+        phone: phone?.toString() || null,
+        role: role.toString(),
+      })
+
+      if (insertError) {
+        console.error("Error creating user record:", insertError)
+        // Don't return error here as auth user was created successfully
+      }
+    }
+
     return { success: "Check your email to confirm your account." }
   } catch (error) {
     console.error("Sign up error:", error)
@@ -84,7 +99,9 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
+
   await supabase.auth.signOut()
   redirect("/auth/login")
 }

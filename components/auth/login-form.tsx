@@ -45,7 +45,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
-        <CardDescription>Access your ECU Remapping Jobs account</CardDescription>
+        <CardDescription>Access your CTEK JOB LEADS account</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">

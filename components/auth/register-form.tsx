@@ -36,7 +36,7 @@ export function RegisterForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-        <CardDescription>Join the ECU Remapping Jobs platform</CardDescription>
+        <CardDescription>Join the CTEK JOB LEADS platform</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
