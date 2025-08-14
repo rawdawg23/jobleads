@@ -1,6 +1,6 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -16,20 +16,37 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
     })
 
     if (error) {
-      return { error: error.message }
+      return { error: error.message || "Invalid email or password" }
     }
 
-    // Return success instead of redirecting directly
+    if (data?.access_token) {
+      const cookieStore = cookies()
+      cookieStore.set("sb-access-token", data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+
+      if (data?.refresh_token) {
+        cookieStore.set("sb-refresh-token", data.refresh_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        })
+      }
+    }
+
     return { success: true }
   } catch (error) {
     console.error("Login error:", error)
@@ -53,8 +70,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "All required fields must be filled" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -68,14 +84,14 @@ export async function signUp(prevState: any, formData: FormData) {
     })
 
     if (error) {
-      if (error.message.includes("Too many signup attempts")) {
+      if (error.message && error.message.includes("Too many signup attempts")) {
         return { error: "Too many signup attempts. Please wait a moment and try again." }
       }
-      return { error: error.message }
+      return { error: error.message || "Failed to create account" }
     }
 
     // If user was created, add them to the users table
-    if (data.user) {
+    if (data?.user) {
       const { error: insertError } = await supabase.from("users").insert({
         id: data.user.id,
         email: email.toString(),
@@ -99,9 +115,17 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
-  await supabase.auth.signOut()
+  try {
+    await supabase.auth.signOut()
+
+    const cookieStore = cookies()
+    cookieStore.delete("sb-access-token")
+    cookieStore.delete("sb-refresh-token")
+  } catch (error) {
+    console.error("Sign out error:", error)
+  }
+
   redirect("/auth/login")
 }
