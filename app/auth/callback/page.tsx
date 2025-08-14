@@ -9,8 +9,12 @@ export default async function AuthCallback({
   const code = searchParams.code
 
   if (code) {
-    const supabase = createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    try {
+      const supabase = createClient()
+      await supabase.auth.exchangeCodeForSession(code)
+    } catch (error) {
+      console.error("Auth callback error:", error)
+    }
   }
 
   // URL to redirect to after sign in process completes

@@ -53,15 +53,14 @@ export function RegisterForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="role">Account Type</Label>
-            <Select name="role" defaultValue="customer">
+            <Label htmlFor="accountType">Account Type</Label>
+            <Select name="accountType" defaultValue="Customer - Post Jobs">
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="customer">Customer - Post Jobs</SelectItem>
-                <SelectItem value="dealer">Dealer - Accept Jobs</SelectItem>
-                <SelectItem value="admin">Admin - Platform Management</SelectItem>
+                <SelectItem value="Customer - Post Jobs">Customer - Post Jobs</SelectItem>
+                <SelectItem value="Dealer - Accept Jobs">Dealer - Accept Jobs</SelectItem>
               </SelectContent>
             </Select>
           </div>
