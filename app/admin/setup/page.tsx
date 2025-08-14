@@ -1,34 +1,61 @@
-import { createServerClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
 
-export default async function AdminSetupPage() {
-  const supabase = createServerClient()
+export default function AdminSetupPage() {
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
+  const router = useRouter()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createClient()
 
-  if (!user) {
-    redirect("/auth/login")
-  }
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
 
-  // Check if user is already admin
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+        if (!authUser) {
+          router.push("/auth/login")
+          return
+        }
 
-  if (profile?.role === "admin") {
-    redirect("/admin")
-  }
+        setUser(authUser)
+
+        // Check if user is already admin
+        const { data: profileData } = await supabase.from("users").select("role").eq("id", authUser.id).single()
+
+        setProfile(profileData)
+
+        if (profileData?.role === "admin") {
+          router.push("/admin")
+          return
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error)
+        router.push("/auth/login")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
 
   const makeAdmin = async () => {
-    "use server"
-    const supabase = createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    if (!user) return
 
-    if (user) {
+    setProcessing(true)
+    try {
+      const supabase = createClient()
+
       await supabase.from("users").upsert({
         id: user.id,
         email: user.email || "ogstorage25@gmail.com",
@@ -40,8 +67,23 @@ export default async function AdminSetupPage() {
         postcode: "SW1A 1AA",
       })
 
-      redirect("/admin")
+      router.push("/admin")
+    } catch (error) {
+      console.error("Error making admin:", error)
+    } finally {
+      setProcessing(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -52,14 +94,12 @@ export default async function AdminSetupPage() {
           <CardDescription>Set up your admin account for ECU Remapping Jobs platform</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={makeAdmin}>
-            <Button type="submit" className="w-full">
-              Activate Admin Access
-            </Button>
-          </form>
+          <Button onClick={makeAdmin} disabled={processing} className="w-full">
+            {processing ? "Setting up..." : "Activate Admin Access"}
+          </Button>
           <div className="mt-4 text-sm text-gray-600">
             <p>
-              <strong>Current User:</strong> {user.email}
+              <strong>Current User:</strong> {user?.email}
             </p>
             <p>Click the button above to grant admin privileges to this account.</p>
           </div>
