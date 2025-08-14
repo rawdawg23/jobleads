@@ -1,106 +1,167 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, User, Clock } from "lucide-react"
+import { MessageCircle, User, Clock, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default async function MessagesPage() {
-  const supabase = createClient()
+export const dynamic = "force-dynamic"
 
-  // Check authentication
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login")
-  }
+export default function MessagesPage() {
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [conversations, setConversations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  // Get user profile to determine role
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+  useEffect(() => {
+    async function loadMessages() {
+      try {
+        const supabase = createClient()
 
-  if (!profile) {
-    redirect("/auth/login")
-  }
+        // Check authentication
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
 
-  // Get conversations based on user role
-  let conversations: any[] = []
-
-  if (profile.role === "customer") {
-    // Get conversations where user is the customer
-    const { data } = await supabase
-      .from("messages")
-      .select(`
-        job_id,
-        jobs!inner(
-          id,
-          title,
-          vehicle_make,
-          vehicle_model,
-          status
-        ),
-        dealers!inner(
-          id,
-          business_name,
-          users!dealers_user_id_fkey(first_name, last_name)
-        )
-      `)
-      .eq("jobs.customer_id", user.id)
-      .order("created_at", { ascending: false })
-
-    // Group by job and dealer
-    const grouped = data?.reduce((acc: any, msg: any) => {
-      const key = `${msg.job_id}-${msg.dealers.id}`
-      if (!acc[key]) {
-        acc[key] = {
-          job: msg.jobs,
-          dealer: msg.dealers,
-          lastMessage: msg.created_at,
-          unreadCount: 0,
+        if (!user) {
+          router.push("/auth/login")
+          return
         }
-      }
-      return acc
-    }, {})
 
-    conversations = Object.values(grouped || {})
-  } else if (profile.role === "dealer") {
-    // Get dealer profile
-    const { data: dealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
+        setUser(user)
 
-    if (dealer) {
-      const { data } = await supabase
-        .from("messages")
-        .select(`
-          job_id,
-          jobs!inner(
-            id,
-            title,
-            vehicle_make,
-            vehicle_model,
-            status,
-            users!jobs_customer_id_fkey(first_name, last_name)
-          )
-        `)
-        .eq("dealer_id", dealer.id)
-        .order("created_at", { ascending: false })
+        // Get user profile to determine role
+        const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-      // Group by job
-      const grouped = data?.reduce((acc: any, msg: any) => {
-        const key = msg.job_id
-        if (!acc[key]) {
-          acc[key] = {
-            job: msg.jobs,
-            customer: msg.jobs.users,
-            lastMessage: msg.created_at,
-            unreadCount: 0,
+        if (!profile) {
+          router.push("/auth/login")
+          return
+        }
+
+        setProfile(profile)
+
+        // Get conversations based on user role
+        let conversationsData: any[] = []
+
+        if (profile.role === "customer") {
+          // Get conversations where user is the customer
+          const { data } = await supabase
+            .from("messages")
+            .select(`
+              job_id,
+              jobs!inner(
+                id,
+                title,
+                vehicle_make,
+                vehicle_model,
+                status
+              ),
+              dealers!inner(
+                id,
+                business_name,
+                users!dealers_user_id_fkey(first_name, last_name)
+              )
+            `)
+            .eq("jobs.customer_id", user.id)
+            .order("created_at", { ascending: false })
+
+          // Group by job and dealer
+          const grouped = data?.reduce((acc: any, msg: any) => {
+            const key = `${msg.job_id}-${msg.dealers.id}`
+            if (!acc[key]) {
+              acc[key] = {
+                job: msg.jobs,
+                dealer: msg.dealers,
+                lastMessage: msg.created_at,
+                unreadCount: 0,
+              }
+            }
+            return acc
+          }, {})
+
+          conversationsData = Object.values(grouped || {})
+        } else if (profile.role === "dealer") {
+          // Get dealer profile
+          const { data: dealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
+
+          if (dealer) {
+            const { data } = await supabase
+              .from("messages")
+              .select(`
+                job_id,
+                jobs!inner(
+                  id,
+                  title,
+                  vehicle_make,
+                  vehicle_model,
+                  status,
+                  users!jobs_customer_id_fkey(first_name, last_name)
+                )
+              `)
+              .eq("dealer_id", dealer.id)
+              .order("created_at", { ascending: false })
+
+            // Group by job
+            const grouped = data?.reduce((acc: any, msg: any) => {
+              const key = msg.job_id
+              if (!acc[key]) {
+                acc[key] = {
+                  job: msg.jobs,
+                  customer: msg.jobs.users,
+                  lastMessage: msg.created_at,
+                  unreadCount: 0,
+                }
+              }
+              return acc
+            }, {})
+
+            conversationsData = Object.values(grouped || {})
           }
         }
-        return acc
-      }, {})
 
-      conversations = Object.values(grouped || {})
+        setConversations(conversationsData)
+      } catch (err) {
+        console.error("Error loading messages:", err)
+        setError("Failed to load messages")
+      } finally {
+        setLoading(false)
+      }
     }
+
+    loadMessages()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading messages...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return null
   }
 
   return (
