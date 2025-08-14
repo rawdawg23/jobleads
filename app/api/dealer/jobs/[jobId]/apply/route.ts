@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest, { params }: { params: { jobId: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createClient()
 
     // Get authenticated user
     const {
