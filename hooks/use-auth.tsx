@@ -3,172 +3,185 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
-interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  phoneNumber: string
-  role: "customer" | "dealer" | "admin"
-  createdAt: string
-  updatedAt: string
+interface AppUser {
+	id: string
+	email: string
+	first_name: string
+	last_name: string
+	phone?: string
+	role: "customer" | "dealer" | "admin"
 }
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signUp: (
-    email: string,
-    password: string,
-    userData: {
-      firstName: string
-      lastName: string
-      phoneNumber: string
-      role: "customer" | "dealer" | "admin"
-    },
-  ) => Promise<{ error?: string }>
-  signOut: () => Promise<void>
-  isCustomer: boolean
-  isDealer: boolean
-  isAdmin: boolean
+	user: AppUser | null
+	loading: boolean
+	signIn: (email: string, password: string) => Promise<{ error?: string; success?: boolean }>
+	signUp: (
+		email: string,
+		password: string,
+		userData: {
+			firstName: string
+			lastName: string
+			phoneNumber?: string
+			role?: "customer" | "dealer" | "admin"
+		},
+	) => Promise<{ error?: string; success?: string }>
+	signOut: () => Promise<void>
+	isCustomer: boolean
+	isDealer: boolean
+	isAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [mounted, setMounted] = useState(false)
-  const router = useRouter()
+	const [user, setUser] = useState<AppUser | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [mounted, setMounted] = useState(false)
+	const router = useRouter()
+	const supabase = createClient()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+	useEffect(() => {
+		setMounted(true)
+	}, [])
 
-  useEffect(() => {
-    if (!mounted) return
+	useEffect(() => {
+		if (!mounted) return
 
-    const initializeAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
-        })
+		async function loadSession() {
+			try {
+				const {
+					data: { session },
+				} = await supabase.auth.getSession()
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.user) {
-            setUser(data.user)
-          }
-        }
-      } catch (error) {
-        console.warn("Auth initialization error:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+				if (!session) {
+					setUser(null)
+					return
+				}
 
-    initializeAuth()
-  }, [mounted])
+				const authUser = session.user
+				const { data: profile } = await supabase
+					.from("users")
+					.select("first_name, last_name, role, phone")
+					.eq("id", authUser.id)
+					.single()
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      })
+				setUser({
+					id: authUser.id,
+					email: authUser.email || "",
+					first_name: profile?.first_name || "",
+					last_name: profile?.last_name || "",
+					role: (profile?.role as AppUser["role"]) || "customer",
+					phone: profile?.phone,
+				})
+			} catch (e) {
+				setUser(null)
+			} finally {
+				setLoading(false)
+			}
+		}
 
-      const data = await response.json()
+		loadSession()
 
-      if (!response.ok) {
-        return { error: data.error || "Sign in failed" }
-      }
+		const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+			if (!session) {
+				setUser(null)
+				return
+			}
+			// Refresh profile on auth state change
+			;(async () => {
+				const authUser = session.user
+				const { data: profile } = await supabase
+					.from("users")
+					.select("first_name, last_name, role, phone")
+					.eq("id", authUser.id)
+					.single()
+				setUser({
+					id: authUser.id,
+					email: authUser.email || "",
+					first_name: profile?.first_name || "",
+					last_name: profile?.last_name || "",
+					role: (profile?.role as AppUser["role"]) || "customer",
+					phone: profile?.phone,
+				})
+			})()
+		})
 
-      setUser(data.user)
-      return {}
-    } catch (error) {
-      return { error: "An unexpected error occurred. Please try again." }
-    }
-  }
+		return () => {
+			sub.subscription.unsubscribe()
+		}
+	}, [mounted, supabase])
 
-  const signUp = async (
-    email: string,
-    password: string,
-    userData: {
-      firstName: string
-      lastName: string
-      phoneNumber: string
-      role: "customer" | "dealer" | "admin"
-    },
-  ) => {
-    try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          password,
-          ...userData,
-        }),
-      })
+	const signIn = async (email: string, password: string) => {
+		try {
+			const response = await fetch("/auth/login", { method: "GET" })
+			const result = await fetch("/auth/login")
+			// use server action instead (form posts use server actions). Provide a fallback for imperative call.
+			const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+			if (error) return { error: error.message }
+			return { success: true }
+		} catch {
+			return { error: "Unable to sign in" }
+		}
+	}
 
-      const data = await response.json()
+	const signUp = async (
+		email: string,
+		password: string,
+		userData: { firstName: string; lastName: string; phoneNumber?: string; role?: "customer" | "dealer" | "admin" },
+	) => {
+		try {
+			const { error } = await supabase.auth.signUp({
+				email,
+				password,
+				options: {
+					data: {
+						first_name: userData.firstName,
+						last_name: userData.lastName,
+						phone: userData.phoneNumber || "",
+						role: userData.role || "customer",
+					},
+					emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
+						? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+						: undefined,
+				},
+			})
+			if (error) return { error: error.message }
+			return { success: "Check your email to confirm your account." }
+		} catch {
+			return { error: "Unable to sign up" }
+		}
+	}
 
-      if (!response.ok) {
-        return { error: data.error || "Sign up failed" }
-      }
+	const signOut = async () => {
+		await supabase.auth.signOut()
+		router.push("/auth/login")
+	}
 
-      setUser(data.user)
-      return {}
-    } catch (error) {
-      return { error: "An unexpected error occurred during registration." }
-    }
-  }
+	if (!mounted) {
+		return null as any
+	}
 
-  const signOut = async () => {
-    try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        credentials: "include",
-      })
+	const value: AuthContextType = {
+		user,
+		loading,
+		signIn,
+		signUp,
+		signOut,
+		isCustomer: user?.role === "customer",
+		isDealer: user?.role === "dealer",
+		isAdmin: user?.role === "admin",
+	}
 
-      setUser(null)
-      router.push("/")
-    } catch (error) {
-      console.error("Sign out error:", error)
-    }
-  }
-
-  if (!mounted) {
-    return null
-  }
-
-  const value = {
-    user,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    isCustomer: user?.role === "customer",
-    isDealer: user?.role === "dealer",
-    isAdmin: user?.role === "admin",
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+	const context = useContext(AuthContext)
+	if (context === undefined) {
+		throw new Error("useAuth must be used within an AuthProvider")
+	}
+	return context
 }
