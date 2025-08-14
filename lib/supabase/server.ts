@@ -19,6 +19,11 @@ export const createClient = cache(() => {
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        signUp: () =>
+          Promise.resolve({
+            data: { user: null },
+            error: { message: "Supabase not configured" },
+          }),
       },
       from: () => ({
         select: () => ({
@@ -26,6 +31,11 @@ export const createClient = cache(() => {
             single: () => Promise.resolve({ data: null, error: null }),
           }),
         }),
+        insert: () =>
+          Promise.resolve({
+            data: null,
+            error: { message: "Supabase not configured" },
+          }),
       }),
     }
   }
