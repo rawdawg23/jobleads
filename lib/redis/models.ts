@@ -1,6 +1,6 @@
-import { redisClient } from "./client"
+import { redisClient, isRedisConfigured } from "./client"
 import { nanoid } from "nanoid"
-import bcrypt from "bcryptjs"
+import { WebCrypto } from "./crypto"
 
 export interface User {
   id: string
@@ -35,6 +35,15 @@ export const RedisKeys = {
 
 export class UserModel {
   static async create(userData: Omit<User, "id" | "createdAt" | "updatedAt">, password: string): Promise<User> {
+    if (!isRedisConfigured) {
+      return {
+        id: nanoid(),
+        ...userData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+    }
+
     const userId = nanoid()
     const now = new Date().toISOString()
 
@@ -45,8 +54,7 @@ export class UserModel {
       updatedAt: now,
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 12)
+    const passwordHash = await WebCrypto.hash(password, 12)
 
     // Store user data
     await redisClient.set(RedisKeys.user(userId), JSON.stringify(user))
@@ -67,11 +75,15 @@ export class UserModel {
   }
 
   static async findById(id: string): Promise<User | null> {
+    if (!isRedisConfigured) return null
+
     const userData = await redisClient.get(RedisKeys.user(id))
     return userData ? JSON.parse(userData as string) : null
   }
 
   static async findByEmail(email: string): Promise<User | null> {
+    if (!isRedisConfigured) return null
+
     const userId = await redisClient.get(RedisKeys.userByEmail(email))
     if (!userId) return null
 
@@ -79,6 +91,8 @@ export class UserModel {
   }
 
   static async verifyPassword(email: string, password: string): Promise<User | null> {
+    if (!isRedisConfigured) return null
+
     const user = await this.findByEmail(email)
     if (!user) return null
 
@@ -86,12 +100,14 @@ export class UserModel {
     if (!credentialsData) return null
 
     const credentials: UserCredentials = JSON.parse(credentialsData as string)
-    const isValid = await bcrypt.compare(password, credentials.passwordHash)
+    const isValid = await WebCrypto.compare(password, credentials.passwordHash)
 
     return isValid ? user : null
   }
 
   static async update(id: string, updates: Partial<Omit<User, "id" | "createdAt">>): Promise<User | null> {
+    if (!isRedisConfigured) return null
+
     const user = await this.findById(id)
     if (!user) return null
 
@@ -119,6 +135,8 @@ export class SessionModel {
       createdAt: now.toISOString(),
     }
 
+    if (!isRedisConfigured) return session
+
     // Store session with TTL
     const ttlSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
     await redisClient.setex(RedisKeys.session(sessionId), ttlSeconds, JSON.stringify(session))
@@ -130,6 +148,8 @@ export class SessionModel {
   }
 
   static async findById(sessionId: string): Promise<Session | null> {
+    if (!isRedisConfigured) return null
+
     const sessionData = await redisClient.get(RedisKeys.session(sessionId))
     if (!sessionData) return null
 
@@ -145,6 +165,8 @@ export class SessionModel {
   }
 
   static async delete(sessionId: string): Promise<void> {
+    if (!isRedisConfigured) return
+
     const session = await this.findById(sessionId)
     if (session) {
       await redisClient.srem(RedisKeys.userSessions(session.userId), sessionId)
@@ -153,6 +175,8 @@ export class SessionModel {
   }
 
   static async deleteAllUserSessions(userId: string): Promise<void> {
+    if (!isRedisConfigured) return
+
     const sessionIds = await redisClient.smembers(RedisKeys.userSessions(userId))
 
     if (sessionIds.length > 0) {
@@ -166,6 +190,8 @@ export class SessionModel {
   }
 
   static async refresh(sessionId: string, expiresInHours = 24): Promise<Session | null> {
+    if (!isRedisConfigured) return null
+
     const session = await this.findById(sessionId)
     if (!session) return null
 

@@ -1,9 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { AuthService } from "@/lib/redis/auth"
-import { redisClient } from "@/lib/redis/client"
+import { redisClient, isRedisConfigured } from "@/lib/redis/client"
 
 export async function GET(request: NextRequest) {
   try {
+    if (!isRedisConfigured) {
+      return NextResponse.json({
+        stats: {
+          totalUsers: 0,
+          activeDealers: 0,
+          activeJobs: 0,
+          monthlyRevenue: 0,
+        },
+      })
+    }
+
     // Check if user is authenticated and is admin
     const result = await AuthService.getCurrentUser()
 
