@@ -1,36 +1,109 @@
-import { requireRole } from "@/lib/auth-utils"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-export default async function AdminDashboardPage() {
-  const user = await requireRole(["admin"])
+interface UserProfile {
+  id: string
+  first_name: string
+  last_name: string
+  role: string
+}
 
-  const supabase = createClient()
+interface Stats {
+  totalUsers: number
+  activeDealers: number
+  activeJobs: number
+  monthlyRevenue: number
+}
 
-  // Get user profile
-  const { data: userProfile } = await supabase.from("users").select("*").eq("id", user.id).single()
+export default function AdminDashboardPage() {
+  const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0,
+    activeDealers: 0,
+    activeJobs: 0,
+    monthlyRevenue: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  // Fetch admin stats
-  const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
-    supabase.from("users").select("id"),
-    supabase.from("dealers").select("id, status").eq("status", "active"),
-    supabase.from("jobs").select("id, status").eq("status", "open"),
-    supabase
-      .from("payments")
-      .select("amount")
-      .eq("status", "completed")
-      .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-  ])
+  useEffect(() => {
+    async function checkAuthAndLoadData() {
+      try {
+        const supabase = createClient()
 
-  const stats = {
-    totalUsers: usersResult.data?.length || 0,
-    activeDealers: dealersResult.data?.length || 0,
-    activeJobs: jobsResult.data?.length || 0,
-    monthlyRevenue: (paymentsResult.data?.reduce((sum, payment) => sum + payment.amount, 0) || 0) / 100,
+        // Check authentication
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser()
+
+        if (authError || !authUser) {
+          router.push("/auth/login")
+          return
+        }
+
+        setUser(authUser)
+
+        // Get user profile and check admin role
+        const { data: userProfileData, error: profileError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", authUser.id)
+          .single()
+
+        if (profileError || !userProfileData || userProfileData.role !== "admin") {
+          router.push("/dashboard")
+          return
+        }
+
+        setUserProfile(userProfileData)
+
+        const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
+          supabase.from("users").select("id"),
+          supabase.from("dealers").select("id, status").eq("status", "active"),
+          supabase.from("jobs").select("id, status").eq("status", "open"),
+          supabase
+            .from("payments")
+            .select("amount")
+            .eq("status", "completed")
+            .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+        ])
+
+        setStats({
+          totalUsers: usersResult.data?.length || 0,
+          activeDealers: dealersResult.data?.length || 0,
+          activeJobs: jobsResult.data?.length || 0,
+          monthlyRevenue: (paymentsResult.data?.reduce((sum, payment) => sum + payment.amount, 0) || 0) / 100,
+        })
+      } catch (error) {
+        console.error("Error loading admin data:", error)
+        router.push("/dashboard")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuthAndLoadData()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading admin dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -45,7 +118,7 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-slate-900">
-                {userProfile?.first_name} {userProfile?.last_name}
+                {userProfile?.first_name || "Admin"} {userProfile?.last_name || "User"}
               </span>
               <Badge variant="destructive">Admin</Badge>
             </div>
