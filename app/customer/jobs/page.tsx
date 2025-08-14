@@ -166,19 +166,23 @@ export default function CustomerJobsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Wrench className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-slate-900">CTEK JOB LEADS</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-slate-600">
-              {user.first_name} {user.last_name}
-            </span>
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-3">
+              <div className="p-2 bg-gray-800 rounded-lg">
+                <Wrench className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">CTEK JOB LEADS</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                {user.first_name} {user.last_name}
+              </div>
+              <Button variant="outline" asChild className="border-gray-300 bg-transparent">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

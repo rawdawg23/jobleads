@@ -1,20 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { AuthService } from "@/lib/redis/auth"
+import { JobModel, PaymentModel } from "@/lib/redis/extended-models"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
-
     // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const result = await AuthService.getCurrentUser()
 
-    if (authError || !user) {
+    if (!result) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { user } = result
     const { registration, postcode, serviceType, description, requiredTools, vehicleData } = await request.json()
 
     if (!registration || !postcode || !serviceType || !description || !vehicleData) {
@@ -22,44 +19,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Create job record
-    const { data: job, error: jobError } = await supabase
-      .from("jobs")
-      .insert({
-        customer_id: user.id,
-        registration: registration.toUpperCase(),
-        make: vehicleData.make,
-        model: vehicleData.model,
-        year: vehicleData.year,
-        engine_size: vehicleData.engineSize,
-        fuel_type: vehicleData.fuelType,
-        service_type: serviceType,
-        description,
-        required_tools: requiredTools,
-        customer_postcode: postcode.toUpperCase(),
-        status: "pending",
-      })
-      .select()
-      .single()
-
-    if (jobError) {
-      console.error("Job creation error:", jobError)
-      return NextResponse.json({ error: "Failed to create job" }, { status: 500 })
-    }
-
-    // Create payment record
-    const { error: paymentError } = await supabase.from("payments").insert({
-      user_id: user.id,
-      amount: 5.0,
-      currency: "GBP",
-      payment_type: "job_posting",
-      reference_id: job.id,
+    const job = await JobModel.create({
+      customerId: user.id,
+      registration: registration.toUpperCase(),
+      make: vehicleData.make,
+      model: vehicleData.model,
+      year: vehicleData.year,
+      engineSize: vehicleData.engineSize,
+      fuelType: vehicleData.fuelType,
+      serviceType,
+      description,
+      requiredTools: requiredTools || [],
+      customerPostcode: postcode.toUpperCase(),
       status: "pending",
     })
 
-    if (paymentError) {
-      console.error("Payment creation error:", paymentError)
-      return NextResponse.json({ error: "Failed to create payment record" }, { status: 500 })
-    }
+    // Create payment record
+    await PaymentModel.create({
+      userId: user.id,
+      amount: 5.0,
+      currency: "GBP",
+      paymentType: "job_posting",
+      referenceId: job.id,
+      status: "pending",
+    })
 
     return NextResponse.json({
       jobId: job.id,
@@ -67,6 +50,30 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Job creation error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const result = await AuthService.getCurrentUser()
+
+    if (!result) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { user } = result
+    let jobs = []
+
+    if (user.role === "customer") {
+      jobs = await JobModel.findByCustomer(user.id)
+    } else {
+      jobs = await JobModel.findAll()
+    }
+
+    return NextResponse.json({ jobs })
+  } catch (error) {
+    console.error("Jobs fetch error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

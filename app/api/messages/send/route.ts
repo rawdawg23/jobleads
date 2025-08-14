@@ -1,18 +1,16 @@
-import { createClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
+import { AuthService } from "@/lib/redis/auth"
+import { JobModel, DealerModel, MessageModel } from "@/lib/redis/extended-models"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
-
     // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
+    const result = await AuthService.getCurrentUser()
+    if (!result) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { user } = result
     const formData = await request.formData()
     const jobId = formData.get("jobId") as string
     const dealerId = formData.get("dealerId") as string
@@ -23,67 +21,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Get user profile
-    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
-
-    if (!profile) {
-      return NextResponse.json({ error: "User profile not found" }, { status: 404 })
-    }
-
-    // Verify job access
-    const { data: job } = await supabase.from("jobs").select("customer_id").eq("id", jobId).single()
-
+    // Verify job exists
+    const job = await JobModel.findById(jobId)
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 })
     }
 
-    // Check permissions
-    if (profile.role === "customer" && job.customer_id !== user.id) {
+    // Check permissions based on user role
+    if (user.role === "customer" && job.customerId !== user.id) {
       return NextResponse.json({ error: "Unauthorized access to job" }, { status: 403 })
     }
 
-    if (profile.role === "dealer") {
+    if (user.role === "dealer") {
       if (!dealerId) {
         return NextResponse.json({ error: "Dealer ID required" }, { status: 400 })
       }
 
       // Verify dealer ownership
-      const { data: dealer } = await supabase
-        .from("dealers")
-        .select("id")
-        .eq("id", dealerId)
-        .eq("user_id", user.id)
-        .single()
-
-      if (!dealer) {
+      const dealer = await DealerModel.findById(dealerId)
+      if (!dealer || dealer.userId !== user.id) {
         return NextResponse.json({ error: "Unauthorized dealer access" }, { status: 403 })
       }
 
-      // Check if dealer has applied to this job
-      const { data: application } = await supabase
-        .from("job_applications")
-        .select("id")
-        .eq("job_id", jobId)
-        .eq("dealer_id", dealerId)
-        .single()
+      // TODO: Check if dealer has applied to this job when job applications are implemented
+      // For now, allow any dealer to message about any job
+    }
 
-      if (!application) {
-        return NextResponse.json({ error: "Must apply to job before messaging" }, { status: 403 })
+    // Determine recipient based on sender role
+    let recipientId: string
+    if (user.role === "customer") {
+      // Customer is messaging a dealer - need to determine which dealer
+      if (!dealerId) {
+        return NextResponse.json({ error: "Dealer ID required for customer messages" }, { status: 400 })
       }
+      const dealer = await DealerModel.findById(dealerId)
+      if (!dealer) {
+        return NextResponse.json({ error: "Dealer not found" }, { status: 404 })
+      }
+      recipientId = dealer.userId
+    } else {
+      // Dealer is messaging the customer
+      recipientId = job.customerId
     }
 
     // Create message
-    const { error } = await supabase.from("messages").insert({
-      job_id: jobId,
-      dealer_id: dealerId || null,
-      sender_id: user.id,
+    await MessageModel.create({
+      jobId,
+      senderId: user.id,
+      recipientId,
+      dealerId: dealerId || undefined,
       content: message.trim(),
     })
-
-    if (error) {
-      console.error("Error creating message:", error)
-      return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
-    }
 
     return NextResponse.redirect(new URL(`/messages/${jobId}`, request.url))
   } catch (error) {

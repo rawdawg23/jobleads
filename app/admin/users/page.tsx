@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,63 +8,52 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Shield, ArrowLeft, Mail, Phone, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 
 interface User {
   id: string
   email: string
-  first_name: string
-  last_name: string
-  phone: string | null
-  role: string
-  created_at: string
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  role: "customer" | "dealer" | "admin"
+  createdAt: string
 }
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { user, isAdmin } = useAuth()
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
-    async function checkAuthAndLoadUsers() {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (!user) {
-          router.push("/auth/login")
-          return
-        }
-
-        const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
-
-        if (!userData || userData.role !== "admin") {
-          router.push("/")
-          return
-        }
-
-        const { data: usersData, error: usersError } = await supabase
-          .from("users")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (usersError) {
-          setError("Failed to load users")
-          return
-        }
-
-        setUsers(usersData || [])
-      } catch (err) {
-        setError("An error occurred while loading users")
-      } finally {
-        setLoading(false)
-      }
+    if (!user || !isAdmin) {
+      router.push("/auth/login")
+      return
     }
 
-    checkAuthAndLoadUsers()
-  }, [router, supabase])
+    loadUsers()
+  }, [user, isAdmin, router])
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch("/api/admin/users", {
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to load users")
+      }
+
+      const data = await response.json()
+      setUsers(data.users || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load users")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -159,7 +147,7 @@ export default function AdminUsersPage() {
                   {users?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
-                        {user.first_name} {user.last_name}
+                        {user.firstName} {user.lastName}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -173,10 +161,10 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {user.phone ? (
+                        {user.phoneNumber ? (
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-slate-400" />
-                            {user.phone}
+                            {user.phoneNumber}
                           </div>
                         ) : (
                           <span className="text-slate-400">Not provided</span>
@@ -185,7 +173,7 @@ export default function AdminUsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-slate-400" />
-                          {formatDate(user.created_at)}
+                          {formatDate(user.createdAt)}
                         </div>
                       </TableCell>
                       <TableCell>

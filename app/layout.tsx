@@ -1,12 +1,47 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { DM_Sans, DM_Serif_Display } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+  weight: ["400", "500", "600", "700"],
+})
+
+const dmSerifDisplay = DM_Serif_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-serif",
+  weight: ["400"],
+})
 
 export const metadata: Metadata = {
   title: "CTEK JOB LEADS - Professional ECU Remapping Network",
   description: "Connect with certified ECU specialists. Professional ECU remapping jobs and dealer network.",
   generator: "v0.app",
+  keywords:
+    "ECU remapping, ECU tuning, car tuning, performance tuning, diesel tuning, chip tuning, professional ECU, certified dealers",
+  authors: [{ name: "CTEK JOB LEADS" }],
+  creator: "CTEK JOB LEADS",
+  publisher: "CTEK JOB LEADS",
+  openGraph: {
+    title: "CTEK JOB LEADS - Professional ECU Remapping Network",
+    description: "Connect with certified ECU specialists. Professional ECU remapping jobs and dealer network.",
+    type: "website",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CTEK JOB LEADS - Professional ECU Remapping Network",
+    description: "Connect with certified ECU specialists. Professional ECU remapping jobs and dealer network.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
@@ -15,8 +50,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={`${dmSans.variable} ${dmSerifDisplay.variable} antialiased`}>
+      <body className="font-sans">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

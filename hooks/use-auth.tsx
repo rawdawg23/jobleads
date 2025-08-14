@@ -2,18 +2,17 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 interface User {
   id: string
   email: string
-  first_name: string
-  last_name: string
-  phone?: string
-  role: string
-  created_at: string
-  updated_at: string
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  role: "customer" | "dealer" | "admin"
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthContextType {
@@ -23,8 +22,13 @@ interface AuthContextType {
   signUp: (
     email: string,
     password: string,
-    userData: Partial<User>,
-  ) => Promise<{ error?: string; isRateLimit?: boolean; waitTime?: number }>
+    userData: {
+      firstName: string
+      lastName: string
+      phoneNumber: string
+      role: "customer" | "dealer" | "admin"
+    },
+  ) => Promise<{ error?: string }>
   signOut: () => Promise<void>
   isCustomer: boolean
   isDealer: boolean
@@ -46,130 +50,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return
 
-    const supabase = createClient()
-
     const initializeAuth = async () => {
       try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession()
-        if (error) {
-          console.warn("Auth session error:", error)
-          setLoading(false)
-          return
-        }
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        })
 
-        if (session?.user) {
-          await fetchUserProfile(session.user.id)
-        } else {
-          setLoading(false)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            setUser(data.user)
+          }
         }
       } catch (error) {
         console.warn("Auth initialization error:", error)
+      } finally {
         setLoading(false)
       }
     }
 
     initializeAuth()
-
-    let subscription: any
-    try {
-      const {
-        data: { subscription: authSubscription },
-      } = supabase.auth.onAuthStateChange(async (event, session) => {
-        try {
-          if (session?.user) {
-            await fetchUserProfile(session.user.id)
-          } else {
-            setUser(null)
-            setLoading(false)
-          }
-        } catch (error) {
-          console.warn("Auth state change error:", error)
-          setLoading(false)
-        }
-      })
-      subscription = authSubscription
-    } catch (error) {
-      console.warn("Auth listener error:", error)
-      setLoading(false)
-    }
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe()
-      }
-    }
   }, [mounted])
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const supabase = createClient()
-      const { data, error } = await supabase.from("users").select("*").eq("id", userId).single()
-
-      if (error) throw error
-      setUser(data)
-    } catch (error) {
-      console.error("Error fetching user profile:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const signIn = async (email: string, password: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
       })
 
-      if (error) return { error: error.message }
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { error: data.error || "Sign in failed" }
+      }
+
+      setUser(data.user)
       return {}
     } catch (error) {
-      return { error: "An unexpected error occurred" }
+      return { error: "An unexpected error occurred. Please try again." }
     }
   }
 
-  const signUp = async (email: string, password: string, userData: Partial<User>) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    userData: {
+      firstName: string
+      lastName: string
+      phoneNumber: string
+      role: "customer" | "dealer" | "admin"
+    },
+  ) => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            (typeof window !== "undefined" ? window.location.origin : ""),
-          data: userData,
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+          ...userData,
+        }),
       })
 
-      if (error) {
-        if (error.message.includes("Too many signup attempts")) {
-          const waitTimeMatch = error.message.match(/(\d+) seconds/)
-          const waitTime = waitTimeMatch ? Number.parseInt(waitTimeMatch[1]) : 60
+      const data = await response.json()
 
-          return {
-            error: `Creating account automatically in ${waitTime} seconds...`,
-            isRateLimit: true,
-            waitTime,
-          }
-        }
-        return { error: error.message }
+      if (!response.ok) {
+        return { error: data.error || "Sign up failed" }
       }
 
+      setUser(data.user)
       return {}
     } catch (error) {
-      return { error: "An unexpected error occurred" }
+      return { error: "An unexpected error occurred during registration." }
     }
   }
 
   const signOut = async () => {
     try {
-      const supabase = createClient()
-      await supabase.auth.signOut()
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      setUser(null)
       router.push("/")
     } catch (error) {
       console.error("Sign out error:", error)

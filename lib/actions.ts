@@ -1,33 +1,42 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { AuthService } from "@/lib/redis/auth"
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 
 export async function signIn(prevState: any, formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const email = formData.get("email")
+  const password = formData.get("password")
 
   if (!email || !password) {
     return { error: "Email and password are required" }
   }
 
-  const supabase = createClient()
+  try {
+    const result = await AuthService.signIn(email.toString(), password.toString())
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    if ("error" in result) {
+      return { error: result.error }
+    }
 
-  if (error) {
-    return { error: error.message }
-  }
+    const { user, session } = result
 
-  if (data.user) {
-    const { data: userData } = await supabase.from("users").select("role").eq("id", data.user.id).single()
+    // Set session cookie
+    const cookieStore = cookies()
+    cookieStore.set("ctek-session", session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
+    })
 
-    const role = userData?.role || "customer"
-
-    switch (role) {
+    // Redirect based on user role
+    switch (user.role) {
       case "admin":
         redirect("/admin")
         break
@@ -37,59 +46,93 @@ export async function signIn(prevState: any, formData: FormData) {
       default:
         redirect("/dashboard")
     }
+  } catch (error) {
+    console.error("Login error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
   }
-
-  return { success: true }
 }
 
 export async function signUp(prevState: any, formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
-  const firstName = formData.get("firstName") as string
-  const lastName = formData.get("lastName") as string
-  const phone = formData.get("phone") as string
-  const accountType = formData.get("accountType") as string
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const email = formData.get("email")
+  const password = formData.get("password")
+  const firstName = formData.get("firstName")
+  const lastName = formData.get("lastName")
+  const phone = formData.get("phone")
+  const accountType = formData.get("accountType")
 
   if (!email || !password || !firstName || !lastName) {
-    return { error: "All fields are required" }
+    return { error: "All required fields must be filled" }
   }
 
-  const supabase = createClient()
+  try {
+    const role =
+      accountType === "Customer - Post Jobs"
+        ? "customer"
+        : accountType === "Dealer - Apply for Jobs"
+          ? "dealer"
+          : "customer"
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
-  })
+    const userData = {
+      email: email.toString(),
+      firstName: firstName.toString(),
+      lastName: lastName.toString(),
+      phoneNumber: phone?.toString() || "",
+      role: role as "customer" | "dealer" | "admin",
+    }
 
-  if (error) {
-    return { error: error.message }
-  }
+    const result = await AuthService.signUp(userData, password.toString())
 
-  if (data.user) {
-    const role = accountType === "Customer - Post Jobs" ? "customer" : "dealer"
+    if ("error" in result) {
+      return { error: result.error }
+    }
 
-    const { error: dbError } = await supabase.from("users").insert({
-      id: data.user.id,
-      email,
-      first_name: firstName,
-      last_name: lastName,
-      phone: phone || null,
-      role,
+    const { user, session } = result
+
+    // Set session cookie
+    const cookieStore = cookies()
+    cookieStore.set("ctek-session", session.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
     })
 
-    if (dbError) {
-      return { error: "Failed to create user profile" }
+    // Redirect based on user role
+    switch (user.role) {
+      case "admin":
+        redirect("/admin")
+        break
+      case "dealer":
+        redirect("/dealer")
+        break
+      default:
+        redirect("/dashboard")
     }
+  } catch (error) {
+    console.error("Sign up error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
   }
-
-  return { success: "Check your email to confirm your account" }
 }
 
 export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
+  try {
+    const cookieStore = cookies()
+    const sessionId = cookieStore.get("ctek-session")?.value
+
+    if (sessionId) {
+      await AuthService.signOut(sessionId)
+    }
+
+    // Clear session cookie
+    cookieStore.delete("ctek-session")
+  } catch (error) {
+    console.error("Sign out error:", error)
+  }
+
   redirect("/auth/login")
 }

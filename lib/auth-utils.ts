@@ -1,34 +1,14 @@
-import { createClient } from "@/lib/supabase/server"
+import { AuthService } from "@/lib/redis/auth"
 import { redirect } from "next/navigation"
 
 export async function getUser() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
+  const result = await AuthService.getCurrentUser()
+  return result?.user || null
 }
 
 export async function getUserWithRole() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: userData } = await supabase
-    .from("users")
-    .select("role, first_name, last_name")
-    .eq("id", user.id)
-    .single()
-
-  return {
-    ...user,
-    role: userData?.role || "customer",
-    first_name: userData?.first_name,
-    last_name: userData?.last_name,
-  }
+  const result = await AuthService.getCurrentUser()
+  return result?.user || null
 }
 
 export async function requireAuth() {

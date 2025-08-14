@@ -163,20 +163,24 @@ export default function DealerJobsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <MapPin className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-slate-900">Available Jobs</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Navigation className="h-4 w-4" />
-              <span>Your location: {dealerLocation}</span>
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-3">
+              <div className="p-2 bg-gray-800 rounded-lg">
+                <MapPin className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">Available Jobs</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                <Navigation className="h-4 w-4" />
+                <span>Your location: {dealerLocation}</span>
+              </div>
+              <Button variant="outline" asChild className="border-gray-300 bg-transparent">
+                <Link href="/dealer/applications">My Applications</Link>
+              </Button>
             </div>
-            <Button variant="outline" asChild>
-              <Link href="/dealer/applications">My Applications</Link>
-            </Button>
           </div>
         </div>
       </header>

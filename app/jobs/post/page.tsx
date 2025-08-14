@@ -11,7 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Wrench, Car, CreditCard, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { Wrench, Car, CreditCard, Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -34,6 +35,7 @@ export default function PostJobPage() {
     serviceType: "",
     description: "",
     requiredTools: [] as string[],
+    budget: "",
   })
   const [vehicleData, setVehicleData] = useState<VehicleData | null>(null)
   const [dvlaLoading, setDvlaLoading] = useState(false)
@@ -114,12 +116,16 @@ export default function PostJobPage() {
     }
   }
 
+  const getProgressPercentage = () => {
+    return (step / 3) * 100
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <Wrench className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading...</p>
+          <Wrench className="h-12 w-12 text-gray-800 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 text-lg">Loading...</p>
         </div>
       </div>
     )
@@ -130,186 +136,298 @@ export default function PostJobPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Wrench className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-slate-900">ECU Remap Pro</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-slate-600">
-              {user.first_name} {user.last_name}
-            </span>
-            <Button variant="outline" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {/* Modern Header */}
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-3">
+              <div className="p-2 bg-gray-800 rounded-lg">
+                <Wrench className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-gray-900">CTEK JOB LEADS</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600">
+                {user.first_name} {user.last_name}
+              </div>
+              <Button variant="outline" asChild className="border-gray-300 bg-transparent">
+                <Link href="/dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Post ECU Remapping Job</h1>
-          <p className="text-slate-600">Create a job posting for £5 and get matched with local dealers</p>
+      <div className="container mx-auto px-6 py-12 max-w-3xl">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Post ECU Remapping Job</h1>
+          <p className="text-xl text-gray-600">Connect with certified dealers in your area for just £5</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 1 ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}
-            >
-              1
+        {/* Enhanced Progress Bar */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-gray-600">Step {step} of 3</span>
+            <span className="text-sm font-medium text-gray-600">{Math.round(getProgressPercentage())}% Complete</span>
+          </div>
+          <Progress value={getProgressPercentage()} className="h-3 mb-6" />
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                  step >= 1 ? "bg-gray-800 text-white shadow-lg" : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {step > 1 ? <CheckCircle className="h-5 w-5" /> : "1"}
+              </div>
+              <span className="text-sm font-medium text-gray-600 mt-2">Vehicle Details</span>
             </div>
-            <div className={`w-16 h-1 ${step >= 2 ? "bg-blue-600" : "bg-slate-200"}`} />
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 2 ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}
-            >
-              2
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                  step >= 2 ? "bg-gray-800 text-white shadow-lg" : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {step > 2 ? <CheckCircle className="h-5 w-5" /> : "2"}
+              </div>
+              <span className="text-sm font-medium text-gray-600 mt-2">Service Details</span>
             </div>
-            <div className={`w-16 h-1 ${step >= 3 ? "bg-blue-600" : "bg-slate-200"}`} />
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 3 ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}
-            >
-              3
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                  step >= 3 ? "bg-gray-800 text-white shadow-lg" : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {step >= 3 ? <CheckCircle className="h-5 w-5" /> : "3"}
+              </div>
+              <span className="text-sm font-medium text-gray-600 mt-2">Payment</span>
             </div>
           </div>
         </div>
 
         {/* Step 1: Vehicle Lookup */}
         {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Car className="h-5 w-5 text-blue-600" />
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="flex items-center justify-center gap-3 text-2xl font-bold text-gray-900">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Car className="h-6 w-6 text-blue-600" />
+                </div>
                 Vehicle Details
               </CardTitle>
-              <CardDescription>Enter your vehicle registration for automatic data lookup via DVLA</CardDescription>
+              <CardDescription className="text-lg text-gray-600">
+                Enter your vehicle registration for automatic data lookup via DVLA
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {dvlaError && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{dvlaError}</AlertDescription>
+                  <AlertDescription className="text-red-800">{dvlaError}</AlertDescription>
                 </Alert>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="registration">Vehicle Registration</Label>
+              <div className="space-y-3">
+                <Label htmlFor="registration" className="text-sm font-semibold text-gray-700">
+                  Vehicle Registration
+                </Label>
                 <Input
                   id="registration"
                   placeholder="e.g. AB12 CDE"
                   value={formData.registration}
                   onChange={(e) => setFormData((prev) => ({ ...prev, registration: e.target.value.toUpperCase() }))}
-                  className="uppercase"
+                  className="h-12 text-lg font-mono uppercase border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="postcode">Your Postcode</Label>
+              <div className="space-y-3">
+                <Label htmlFor="postcode" className="text-sm font-semibold text-gray-700">
+                  Your Postcode
+                </Label>
                 <Input
                   id="postcode"
                   placeholder="e.g. SW1A 1AA"
                   value={formData.postcode}
                   onChange={(e) => setFormData((prev) => ({ ...prev, postcode: e.target.value.toUpperCase() }))}
-                  className="uppercase"
+                  className="h-12 text-lg font-mono uppercase border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                 />
               </div>
 
               <Button
                 onClick={lookupVehicle}
                 disabled={!formData.registration || !formData.postcode || dvlaLoading}
-                className="w-full"
+                className="w-full h-14 text-lg font-semibold bg-gray-800 hover:bg-gray-900 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                {dvlaLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Lookup Vehicle Data
+                {dvlaLoading ? (
+                  <>
+                    <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                    Looking up vehicle...
+                  </>
+                ) : (
+                  <>
+                    <Car className="mr-3 h-5 w-5" />
+                    Lookup Vehicle Data
+                  </>
+                )}
               </Button>
+
+              <div className="text-center text-sm text-gray-500">
+                <p>We use official DVLA data to automatically fill in your vehicle details</p>
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Step 2: Job Details */}
         {step === 2 && vehicleData && (
-          <div className="space-y-6">
-            <Card>
+          <div className="space-y-8">
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
                   Vehicle Found
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Make:</span> {vehicleData.make}
+                <div className="grid grid-cols-2 gap-6 text-base">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Make:</span>
+                    <span className="text-gray-900">{vehicleData.make}</span>
                   </div>
-                  <div>
-                    <span className="font-medium">Model:</span> {vehicleData.model}
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Model:</span>
+                    <span className="text-gray-900">{vehicleData.model}</span>
                   </div>
-                  <div>
-                    <span className="font-medium">Year:</span> {vehicleData.year}
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Year:</span>
+                    <span className="text-gray-900">{vehicleData.year}</span>
                   </div>
-                  <div>
-                    <span className="font-medium">Engine:</span> {vehicleData.engineSize}
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Engine:</span>
+                    <span className="text-gray-900">{vehicleData.engineSize}</span>
                   </div>
-                  <div>
-                    <span className="font-medium">Fuel:</span> {vehicleData.fuelType}
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Fuel:</span>
+                    <span className="text-gray-900">{vehicleData.fuelType}</span>
                   </div>
-                  <div>
-                    <span className="font-medium">Colour:</span> {vehicleData.colour}
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-700">Colour:</span>
+                    <span className="text-gray-900">{vehicleData.colour}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Wrench className="h-5 w-5 text-purple-600" />
+                  </div>
                   Service Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="serviceType">Service Type</Label>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="serviceType" className="text-sm font-semibold text-gray-700">
+                    Service Type
+                  </Label>
                   <Select
                     value={formData.serviceType}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, serviceType: value }))}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select service type" />
+                    <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectValue placeholder="Select the service you need" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="stage1_remap">Stage 1 Remap</SelectItem>
-                      <SelectItem value="stage2_remap">Stage 2 Remap</SelectItem>
-                      <SelectItem value="economy_remap">Economy Remap</SelectItem>
-                      <SelectItem value="dpf_delete">DPF Delete</SelectItem>
-                      <SelectItem value="egr_delete">EGR Delete</SelectItem>
-                      <SelectItem value="adblue_delete">AdBlue Delete</SelectItem>
-                      <SelectItem value="custom_remap">Custom Remap</SelectItem>
+                      <SelectItem value="stage1_remap">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Stage 1 Remap</span>
+                          <span className="text-sm text-gray-500">Basic performance enhancement</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="stage2_remap">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Stage 2 Remap</span>
+                          <span className="text-sm text-gray-500">Advanced performance with modifications</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="economy_remap">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Economy Remap</span>
+                          <span className="text-sm text-gray-500">Improved fuel efficiency</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dpf_delete">
+                        <div className="flex flex-col">
+                          <span className="font-medium">DPF Delete</span>
+                          <span className="text-sm text-gray-500">Diesel particulate filter removal</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="egr_delete">
+                        <div className="flex flex-col">
+                          <span className="font-medium">EGR Delete</span>
+                          <span className="text-sm text-gray-500">Exhaust gas recirculation removal</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="adblue_delete">
+                        <div className="flex flex-col">
+                          <span className="font-medium">AdBlue Delete</span>
+                          <span className="text-sm text-gray-500">SCR system removal</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="custom_remap">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Custom Remap</span>
+                          <span className="text-sm text-gray-500">Bespoke tuning solution</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Job Description</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="budget" className="text-sm font-semibold text-gray-700">
+                    Your Budget (£)
+                  </Label>
+                  <Input
+                    id="budget"
+                    type="number"
+                    placeholder="e.g. 300"
+                    value={formData.budget}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, budget: e.target.value }))}
+                    className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                  />
+                  <p className="text-sm text-gray-500">This helps dealers provide accurate quotes</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
+                    Job Description
+                  </Label>
                   <Textarea
                     id="description"
                     placeholder="Describe what you need done, any specific requirements, and when you'd like the work completed..."
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                     rows={4}
+                    className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Required Tools (Optional)</Label>
-                  <p className="text-sm text-slate-600 mb-3">
+                <div className="space-y-4">
+                  <Label className="text-sm font-semibold text-gray-700">Required Tools (Optional)</Label>
+                  <p className="text-sm text-gray-600">
                     Select specific tools if you know what's needed for your vehicle
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {[
                       "KESS V2",
                       "KTAG",
@@ -320,13 +438,13 @@ export default function PostJobPage() {
                       "Dimsport New Genius",
                       "AutoTuner",
                     ].map((tool) => (
-                      <div key={tool} className="flex items-center space-x-2">
+                      <div key={tool} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         <Checkbox
                           id={tool}
                           checked={formData.requiredTools.includes(tool)}
                           onCheckedChange={() => handleToolToggle(tool)}
                         />
-                        <Label htmlFor={tool} className="text-sm">
+                        <Label htmlFor={tool} className="text-sm font-medium">
                           {tool}
                         </Label>
                       </div>
@@ -334,16 +452,22 @@ export default function PostJobPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1 bg-transparent">
+                <div className="flex gap-4 pt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="flex-1 h-12 border-gray-300 bg-transparent"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
                   <Button
                     onClick={() => setStep(3)}
                     disabled={!formData.serviceType || !formData.description}
-                    className="flex-1"
+                    className="flex-1 h-12 bg-gray-800 hover:bg-gray-900 text-white"
                   >
                     Continue to Payment
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -353,60 +477,99 @@ export default function PostJobPage() {
 
         {/* Step 3: Payment */}
         {step === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="flex items-center justify-center gap-3 text-2xl font-bold text-gray-900">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CreditCard className="h-6 w-6 text-green-600" />
+                </div>
                 Job Posting Fee
               </CardTitle>
-              <CardDescription>Pay £5 to post your job and get matched with local dealers</CardDescription>
+              <CardDescription className="text-lg text-gray-600">
+                Pay £5 to post your job and get matched with certified dealers
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
 
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Job Summary</h3>
-                <div className="space-y-1 text-sm text-slate-600">
-                  <div>
-                    Vehicle: {vehicleData?.make} {vehicleData?.model} ({vehicleData?.year})
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
+                <h3 className="font-bold text-lg text-gray-900 mb-4">Job Summary</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Vehicle:</span>
+                    <span className="font-semibold text-gray-900">
+                      {vehicleData?.make} {vehicleData?.model} ({vehicleData?.year})
+                    </span>
                   </div>
-                  <div>Service: {formData.serviceType.replace("_", " ").toUpperCase()}</div>
-                  <div>Location: {formData.postcode}</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Service:</span>
+                    <Badge className="bg-purple-100 text-purple-800">
+                      {formData.serviceType.replace("_", " ").toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Location:</span>
+                    <span className="font-semibold text-gray-900">{formData.postcode}</span>
+                  </div>
+                  {formData.budget && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Budget:</span>
+                      <span className="font-semibold text-green-600">£{formData.budget}</span>
+                    </div>
+                  )}
                   {formData.requiredTools.length > 0 && (
-                    <div>
-                      Tools:{" "}
-                      {formData.requiredTools.map((tool) => (
-                        <Badge key={tool} variant="secondary" className="mr-1 text-xs">
-                          {tool}
-                        </Badge>
-                      ))}
+                    <div className="pt-2 border-t border-gray-200">
+                      <span className="text-gray-600 text-sm">Required Tools:</span>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {formData.requiredTools.map((tool) => (
+                          <Badge key={tool} variant="secondary" className="text-xs">
+                            {tool}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center text-lg font-medium">
-                  <span>Job Posting Fee:</span>
-                  <span>£5.00</span>
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex justify-between items-center text-2xl font-bold mb-2">
+                  <span className="text-gray-900">Job Posting Fee:</span>
+                  <span className="text-green-600">£5.00</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-1">
-                  This fee covers job posting and matching with verified dealers in your area
-                </p>
+                <p className="text-gray-600">This fee covers job posting, dealer matching, and platform services</p>
               </div>
 
-              <div className="flex gap-4">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 bg-transparent">
+              <div className="flex gap-4 pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(2)}
+                  className="flex-1 h-12 border-gray-300 bg-transparent"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                <Button onClick={submitJob} disabled={submitLoading} className="flex-1">
-                  {submitLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Post Job & Pay £5
+                <Button
+                  onClick={submitJob}
+                  disabled={submitLoading}
+                  className="flex-1 h-12 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  {submitLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Creating job...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-5 w-5" />
+                      Post Job & Pay £5
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>

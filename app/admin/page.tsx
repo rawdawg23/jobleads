@@ -1,20 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-
-interface UserProfile {
-  id: string
-  first_name: string
-  last_name: string
-  role: string
-}
+import { useAuth } from "@/hooks/use-auth"
 
 interface Stats {
   totalUsers: number
@@ -24,78 +17,45 @@ interface Stats {
 }
 
 export default function AdminDashboardPage() {
-  const [user, setUser] = useState<any>(null)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const { user, loading, isAdmin } = useAuth()
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     activeDealers: 0,
     activeJobs: 0,
     monthlyRevenue: 0,
   })
-  const [loading, setLoading] = useState(true)
+  const [loadingStats, setLoadingStats] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    async function checkAuthAndLoadData() {
-      try {
-        const supabase = createClient()
-
-        // Check authentication
-        const {
-          data: { user: authUser },
-          error: authError,
-        } = await supabase.auth.getUser()
-
-        if (authError || !authUser) {
-          router.push("/auth/login")
-          return
-        }
-
-        setUser(authUser)
-
-        // Get user profile and check admin role
-        const { data: userProfileData, error: profileError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", authUser.id)
-          .single()
-
-        if (profileError || !userProfileData || userProfileData.role !== "admin") {
-          router.push("/dashboard")
-          return
-        }
-
-        setUserProfile(userProfileData)
-
-        const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
-          supabase.from("users").select("id"),
-          supabase.from("dealers").select("id, status").eq("status", "active"),
-          supabase.from("jobs").select("id, status").eq("status", "open"),
-          supabase
-            .from("payments")
-            .select("amount")
-            .eq("status", "completed")
-            .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-        ])
-
-        setStats({
-          totalUsers: usersResult.data?.length || 0,
-          activeDealers: dealersResult.data?.length || 0,
-          activeJobs: jobsResult.data?.length || 0,
-          monthlyRevenue: (paymentsResult.data?.reduce((sum, payment) => sum + payment.amount, 0) || 0) / 100,
-        })
-      } catch (error) {
-        console.error("Error loading admin data:", error)
-        router.push("/dashboard")
-      } finally {
-        setLoading(false)
-      }
+    if (!loading && (!user || !isAdmin)) {
+      router.push("/auth/login")
+      return
     }
 
-    checkAuthAndLoadData()
-  }, [router])
+    if (user && isAdmin) {
+      loadStats()
+    }
+  }, [user, loading, isAdmin, router])
 
-  if (loading) {
+  const loadStats = async () => {
+    try {
+      const response = await fetch("/api/admin/stats", {
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data.stats)
+      }
+    } catch (error) {
+      console.error("Error loading admin stats:", error)
+    } finally {
+      setLoadingStats(false)
+    }
+  }
+
+  if (loading || loadingStats) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -104,6 +64,10 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     )
+  }
+
+  if (!user || !isAdmin) {
+    return null
   }
 
   return (
@@ -118,7 +82,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-slate-900">
-                {userProfile?.first_name || "Admin"} {userProfile?.last_name || "User"}
+                {user.firstName} {user.lastName}
               </span>
               <Badge variant="destructive">Admin</Badge>
             </div>
