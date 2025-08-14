@@ -61,6 +61,7 @@ export function RegisterForm() {
               <SelectContent>
                 <SelectItem value="customer">Customer - Post Jobs</SelectItem>
                 <SelectItem value="dealer">Dealer - Accept Jobs</SelectItem>
+                <SelectItem value="admin">Admin - Platform Management</SelectItem>
               </SelectContent>
             </Select>
           </div>

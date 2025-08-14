@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { getRedirectPath } from "@/lib/auth-utils"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -14,16 +16,24 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  try {
-    const supabase = createClient()
+  const supabase = createClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
     })
 
     if (error) {
       return { error: error.message }
+    }
+
+    if (data.user) {
+      const { data: userData } = await supabase.from("users").select("role").eq("id", data.user.id).single()
+
+      const role = userData?.role || "customer"
+      const redirectPath = getRedirectPath(role)
+      redirect(redirectPath)
     }
 
     return { success: true }
@@ -49,9 +59,9 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email, password, first name, and last name are required" }
   }
 
-  try {
-    const supabase = createClient()
+  const supabase = createClient()
 
+  try {
     const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
@@ -73,7 +83,7 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (data?.user) {
-      await supabase.from("users").insert({
+      const { error: dbError } = await supabase.from("users").insert({
         id: data.user.id,
         email: email.toString(),
         first_name: firstName.toString(),
@@ -81,6 +91,11 @@ export async function signUp(prevState: any, formData: FormData) {
         phone: phone?.toString() || null,
         role: role.toString(),
       })
+
+      if (dbError) {
+        console.error("Database error:", dbError)
+        // Don't return error here as auth was successful
+      }
     }
 
     return { success: "Check your email to confirm your account." }
@@ -91,8 +106,9 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
+  const supabase = createClient()
+
   try {
-    const supabase = createClient()
     await supabase.auth.signOut()
   } catch (error) {
     console.error("Sign out error:", error)

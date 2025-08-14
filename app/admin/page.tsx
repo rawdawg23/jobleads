@@ -1,5 +1,5 @@
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { requireRole } from "@/lib/auth-utils"
+import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,31 +7,12 @@ import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-r
 import Link from "next/link"
 
 export default async function AdminDashboardPage() {
-  // If Supabase is not configured, show setup message
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
-      </div>
-    )
-  }
+  const user = await requireRole(["admin"])
 
-  // Check authentication and admin role server-side
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect("/auth/login")
-  }
-
-  // Get user profile to check role
+  // Get user profile
   const { data: userProfile } = await supabase.from("users").select("*").eq("id", user.id).single()
-
-  if (!userProfile || userProfile.role !== "admin") {
-    redirect("/dashboard")
-  }
 
   // Fetch admin stats
   const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
@@ -64,7 +45,7 @@ export default async function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-slate-900">
-                {userProfile.first_name} {userProfile.last_name}
+                {userProfile?.first_name} {userProfile?.last_name}
               </span>
               <Badge variant="destructive">Admin</Badge>
             </div>
