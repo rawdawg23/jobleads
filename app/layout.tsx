@@ -6,8 +6,8 @@ import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "CTEK JOB LEADS - Professional ECU Remapping Network",
+  description: "Connect with certified ECU specialists. Professional ECU remapping jobs and dealer network.",
   generator: "v0.app",
 }
 
