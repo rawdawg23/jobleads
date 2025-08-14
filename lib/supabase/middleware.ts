@@ -1,4 +1,4 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 // Check if Supabase environment variables are available
@@ -15,9 +15,13 @@ export async function updateSession(request: NextRequest) {
     })
   }
 
-  const res = NextResponse.next()
+  const response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  const supabase = createSupabaseClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -26,10 +30,10 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
-          res.cookies.set({ name, value, ...options })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: any) {
-          res.cookies.set({ name, value: "", ...options })
+          response.cookies.set({ name, value: "", ...options })
         },
       },
     },
@@ -42,12 +46,12 @@ export async function updateSession(request: NextRequest) {
   if (code) {
     // Exchange the code for a session
     await supabase.auth.exchangeCodeForSession(code)
-    // Redirect to dashboard after successful auth
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    // Redirect to home page after successful auth
+    return NextResponse.redirect(new URL("/", request.url))
   }
 
-  // Refresh session if expired
+  // Refresh session if expired - required for Server Components
   await supabase.auth.getSession()
 
-  return res
+  return response
 }

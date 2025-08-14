@@ -1,7 +1,8 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
+// Check if Supabase environment variables are available
 export const isSupabaseConfigured =
   (typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
     process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
@@ -26,6 +27,7 @@ export const createClient = cache(() => {
       from: () => ({
         select: () => ({ data: [], error: null }),
         insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => Promise.resolve({ data: null, error: null }),
         eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
       }),
     }
@@ -38,19 +40,19 @@ export const createClient = cache(() => {
     throw new Error("Missing Supabase environment variables")
   }
 
-  return createSupabaseClient(supabaseUrl, supabaseKey, {
+  const cookieStore = cookies()
+
+  return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       get(name: string) {
-        return cookies().get(name)?.value
+        return cookieStore.get(name)?.value
       },
       set(name: string, value: string, options: any) {
-        cookies().set({ name, value, ...options })
+        cookieStore.set({ name, value, ...options })
       },
       remove(name: string, options: any) {
-        cookies().set({ name, value: "", ...options })
+        cookieStore.set({ name, value: "", ...options })
       },
     },
   })
 })
-
-export const createServerClient = createClient

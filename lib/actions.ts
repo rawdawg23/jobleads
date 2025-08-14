@@ -1,7 +1,6 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { getRedirectPath } from "@/lib/auth-utils"
 
@@ -17,8 +16,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -61,8 +59,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email, password, first name, and last name are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -77,7 +74,7 @@ export async function signUp(prevState: any, formData: FormData) {
         },
         emailRedirectTo:
           process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
+          `${typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
       },
     })
 
@@ -109,13 +106,13 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createClient()
 
   try {
     await supabase.auth.signOut()
     redirect("/auth/login")
   } catch (error) {
     console.error("Sign out error:", error)
+    redirect("/auth/login")
   }
 }
