@@ -7,9 +7,10 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-export const supabase = isSupabaseConfigured
-  ? createClientComponentClient()
-  : {
+export const createClient = () => {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase environment variables are not set. Using dummy client.")
+    return {
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
         getSession: async () => ({ data: { session: null }, error: null }),
@@ -29,9 +30,15 @@ export const supabase = isSupabaseConfigured
         insert: () => Promise.resolve({ data: null, error: null }),
       }),
     }
+  }
+
+  return createClientComponentClient()
+}
+
+export const supabase = createClient()
 
 // Server-side Supabase client
-export const createServerSupabaseClient = () => supabase
+export const createServerSupabaseClient = () => createClient()
 
 // Database types
 export type UserRole = "customer" | "dealer" | "admin"
