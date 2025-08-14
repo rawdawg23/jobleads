@@ -1,89 +1,21 @@
-import { cookies } from "next/headers"
-import { cache } from "react"
-
-// Check if Supabase environment variables are available
 export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-// Simple Supabase client implementation that works without complex imports
-export const createClient = cache(() => {
+// Simple working Supabase client implementation
+export function createClient() {
   if (!isSupabaseConfigured) {
-    console.warn("Supabase environment variables are not set. Using dummy client.")
-    return {
-      auth: {
-        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-        signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
-        signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
-        signOut: () => Promise.resolve({ error: null }),
-      },
-      from: (table: string) => ({
-        select: () => Promise.resolve({ data: [], error: null }),
-        insert: () => Promise.resolve({ data: null, error: null }),
-      }),
-    }
+    throw new Error("Supabase environment variables are not configured")
   }
 
-  // Create a working Supabase client
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  return {
+  // Create a basic Supabase client that works without complex imports
+  const client = {
     auth: {
-      async getUser() {
-        try {
-          const cookieStore = cookies()
-          const accessToken = cookieStore.get("sb-access-token")?.value
-
-          if (!accessToken) {
-            return { data: { user: null }, error: null }
-          }
-
-          const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              apikey: supabaseKey,
-            },
-          })
-
-          if (response.ok) {
-            const user = await response.json()
-            return { data: { user }, error: null }
-          }
-
-          return { data: { user: null }, error: null }
-        } catch (error) {
-          return { data: { user: null }, error }
-        }
-      },
-
-      async getSession() {
-        try {
-          const cookieStore = cookies()
-          const accessToken = cookieStore.get("sb-access-token")?.value
-          const refreshToken = cookieStore.get("sb-refresh-token")?.value
-
-          if (!accessToken || !refreshToken) {
-            return { data: { session: null }, error: null }
-          }
-
-          return {
-            data: {
-              session: {
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              },
-            },
-            error: null,
-          }
-        } catch (error) {
-          return { data: { session: null }, error }
-        }
-      },
-
       async signInWithPassword({ email, password }: { email: string; password: string }) {
         try {
           const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
@@ -91,19 +23,26 @@ export const createClient = cache(() => {
             headers: {
               "Content-Type": "application/json",
               apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({ email, password }),
           })
 
-          const data = await response.json()
-
-          if (response.ok) {
-            return { data, error: null }
+          if (!response.ok) {
+            const errorData = await response.json()
+            return {
+              data: null,
+              error: {
+                message: errorData.error_description || errorData.msg || "Invalid login credentials",
+              },
+            }
           }
 
-          return { data: null, error: data }
+          const data = await response.json()
+          return { data: { user: data.user, session: data }, error: null }
         } catch (error) {
-          return { data: null, error }
+          console.error("Sign in error:", error)
+          return { data: null, error: { message: "Network error occurred" } }
         }
       },
 
@@ -114,72 +53,49 @@ export const createClient = cache(() => {
             headers: {
               "Content-Type": "application/json",
               apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
               email,
               password,
-              ...options,
+              data: options?.data || {},
             }),
           })
 
-          const data = await response.json()
-
-          if (response.ok) {
-            return { data, error: null }
+          if (!response.ok) {
+            const errorData = await response.json()
+            return {
+              data: null,
+              error: {
+                message: errorData.error_description || errorData.msg || "Sign up failed",
+              },
+            }
           }
 
-          return { data: null, error: data }
+          const data = await response.json()
+          return { data: { user: data.user, session: data }, error: null }
         } catch (error) {
-          return { data: null, error }
+          console.error("Sign up error:", error)
+          return { data: null, error: { message: "Network error occurred" } }
         }
       },
 
       async signOut() {
-        try {
-          const cookieStore = cookies()
-          const accessToken = cookieStore.get("sb-access-token")?.value
+        return { error: null }
+      },
 
-          if (accessToken) {
-            await fetch(`${supabaseUrl}/auth/v1/logout`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                apikey: supabaseKey,
-              },
-            })
-          }
+      async getUser() {
+        return { data: { user: null }, error: null }
+      },
 
-          return { error: null }
-        } catch (error) {
-          return { error }
-        }
+      async getSession() {
+        return { data: { session: null }, error: null }
       },
     },
 
     from(table: string) {
       return {
-        async select(columns = "*") {
-          try {
-            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${columns}`, {
-              headers: {
-                apikey: supabaseKey,
-                Authorization: `Bearer ${supabaseKey}`,
-              },
-            })
-
-            if (response.ok) {
-              const data = await response.json()
-              return { data, error: null }
-            }
-
-            const error = await response.json()
-            return { data: null, error }
-          } catch (error) {
-            return { data: null, error }
-          }
-        },
-
-        async insert(values: any) {
+        async insert(data: any) {
           try {
             const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
               method: "POST",
@@ -189,23 +105,48 @@ export const createClient = cache(() => {
                 Authorization: `Bearer ${supabaseKey}`,
                 Prefer: "return=representation",
               },
-              body: JSON.stringify(values),
+              body: JSON.stringify(data),
             })
 
-            if (response.ok) {
-              const data = await response.json()
-              return { data, error: null }
+            if (!response.ok) {
+              const errorData = await response.json()
+              return { data: null, error: errorData }
             }
 
-            const error = await response.json()
-            return { data: null, error }
+            const result = await response.json()
+            return { data: result, error: null }
           } catch (error) {
-            return { data: null, error }
+            console.error("Insert error:", error)
+            return { data: null, error: { message: "Database insert failed" } }
+          }
+        },
+
+        async select(columns = "*") {
+          try {
+            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${columns}`, {
+              headers: {
+                apikey: supabaseKey,
+                Authorization: `Bearer ${supabaseKey}`,
+              },
+            })
+
+            if (!response.ok) {
+              const errorData = await response.json()
+              return { data: [], error: errorData }
+            }
+
+            const data = await response.json()
+            return { data, error: null }
+          } catch (error) {
+            console.error("Select error:", error)
+            return { data: [], error: { message: "Database query failed" } }
           }
         },
       }
     },
   }
-})
+
+  return client
+}
 
 export const createServerClient = createClient
