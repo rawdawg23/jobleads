@@ -1,118 +1,31 @@
-"use client"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { RegisterForm } from "@/components/auth/register-form"
 
-import type React from "react"
+export default async function RegisterPage() {
+  // If Supabase is not configured, show setup message directly
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <h1 className="text-2xl font-bold mb-4 text-gray-900">Connect Supabase to get started</h1>
+      </div>
+    )
+  }
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+  // Check if user is already logged in
+  const supabase = createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-export default function RegisterPage() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const router = useRouter()
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setSuccess("")
-
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      accountType: formData.get("accountType") as string,
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string,
-      phoneNumber: formData.get("phoneNumber") as string,
-      password: formData.get("password") as string,
-    }
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Registration failed")
-      }
-
-      setSuccess("Account created successfully! You can now sign in.")
-      setTimeout(() => router.push("/auth/login"), 2000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed")
-    } finally {
-      setLoading(false)
-    }
+  // If user is logged in, redirect to dashboard
+  if (session) {
+    redirect("/dashboard")
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Join the CTEK JOB LEADS platform</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">{success}</div>
-            )}
-
-            <div>
-              <Label htmlFor="accountType">Account Type</Label>
-              <Select name="accountType" defaultValue="Customer - Post Jobs" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Customer - Post Jobs">Customer - Post Jobs</SelectItem>
-                  <SelectItem value="Dealer - Apply for Jobs">Dealer - Apply for Jobs</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input name="firstName" type="text" required />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input name="lastName" type="text" required />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input name="email" type="email" placeholder="you@example.com" required />
-            </div>
-
-            <div>
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input name="phoneNumber" type="tel" required />
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input name="password" type="password" required minLength={6} />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <RegisterForm />
     </div>
   )
 }

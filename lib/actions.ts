@@ -78,15 +78,8 @@ export async function signUp(prevState: any, formData: FormData) {
       email: email.toString(),
       password: password.toString(),
       options: {
-        data: {
-          first_name: firstName.toString(),
-          last_name: lastName.toString(),
-          phone: phone?.toString() || null,
-          role: role.toString(),
-        },
         emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     })
 
@@ -107,6 +100,7 @@ export async function signUp(prevState: any, formData: FormData) {
 
       if (dbError) {
         console.error("Database error:", dbError)
+        return { error: "Failed to create user profile" }
       }
     }
 
