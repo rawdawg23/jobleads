@@ -53,12 +53,8 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "All required fields must be filled" }
   }
 
-  const role =
-    accountType === "Dealer - Accept Jobs"
-      ? "dealer"
-      : accountType === "Customer - Post Jobs"
-        ? "customer"
-        : "customer"
+  const accountTypeStr = (accountType || "").toString()
+  const role = accountTypeStr.includes("Dealer") ? "dealer" : "customer"
 
   const cookieStore = cookies()
   const supabase = createServerActionClient({ cookies: () => cookieStore })
@@ -74,9 +70,6 @@ export async function signUp(prevState: any, formData: FormData) {
           phone: phone?.toString() || "",
           role,
         },
-        emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
-          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-          : undefined,
       },
     })
 
