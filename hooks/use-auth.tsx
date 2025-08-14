@@ -36,36 +36,76 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id)
-      } else {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const supabase = createClient()
+
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
+        if (error) {
+          console.warn("Auth session error:", error)
+          setLoading(false)
+          return
+        }
+
+        if (session?.user) {
+          await fetchUserProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.warn("Auth initialization error:", error)
         setLoading(false)
       }
-    })
+    }
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchUserProfile(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
+    initializeAuth()
+
+    let subscription: any
+    try {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        try {
+          if (session?.user) {
+            await fetchUserProfile(session.user.id)
+          } else {
+            setUser(null)
+            setLoading(false)
+          }
+        } catch (error) {
+          console.warn("Auth state change error:", error)
+          setLoading(false)
+        }
+      })
+      subscription = authSubscription
+    } catch (error) {
+      console.warn("Auth listener error:", error)
+      setLoading(false)
+    }
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
       }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+    }
+  }, [mounted])
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      const supabase = createClient()
       const { data, error } = await supabase.from("users").select("*").eq("id", userId).single()
 
       if (error) throw error
@@ -79,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -93,11 +134,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, userData: Partial<User>) => {
     try {
+      const supabase = createClient()
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            (typeof window !== "undefined" ? window.location.origin : ""),
           data: userData,
         },
       })
@@ -123,8 +167,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push("/")
+    } catch (error) {
+      console.error("Sign out error:", error)
+    }
+  }
+
+  if (!mounted) {
+    return null
   }
 
   const value = {

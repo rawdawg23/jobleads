@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-// import { AuthProvider } from "@/hooks/use-auth"
+import { AuthProvider } from "@/hooks/use-auth"
 
 export const metadata: Metadata = {
   title: "CTEK JOB LEADS - Professional ECU Remapping Network",
@@ -17,8 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
-        {/* <AuthProvider>{children}</AuthProvider> */}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )
