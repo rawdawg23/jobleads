@@ -9,9 +9,17 @@ export const createClient = () => {
     return {
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signOut: () => Promise.resolve({ error: null }),
+        onAuthStateChange: () => ({
+          data: {
+            subscription: {
+              unsubscribe: () => {},
+            },
+          },
+        }),
       },
       from: () => ({
         select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
