@@ -4,7 +4,9 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
+// Update the signIn function to handle redirects properly
 export async function signIn(prevState: any, formData: FormData) {
+  // Check if formData is valid
   if (!formData) {
     return { error: "Form data is missing" }
   }
@@ -12,6 +14,7 @@ export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get("email")
   const password = formData.get("password")
 
+  // Validate required fields
   if (!email || !password) {
     return { error: "Email and password are required" }
   }
@@ -29,6 +32,7 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
+    // Return success instead of redirecting directly
     return { success: true }
   } catch (error) {
     console.error("Login error:", error)
@@ -36,54 +40,32 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 }
 
+// Update the signUp function to handle potential null formData
 export async function signUp(prevState: any, formData: FormData) {
+  // Check if formData is valid
   if (!formData) {
     return { error: "Form data is missing" }
   }
 
   const email = formData.get("email")
   const password = formData.get("password")
-  const firstName = formData.get("firstName")
-  const lastName = formData.get("lastName")
-  const phone = formData.get("phone")
-  const role = formData.get("role")
 
-  if (!email || !password || !firstName || !lastName || !role) {
-    return { error: "All required fields must be filled" }
+  // Validate required fields
+  if (!email || !password) {
+    return { error: "Email and password are required" }
   }
 
   const cookieStore = cookies()
   const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
-      },
     })
 
     if (error) {
       return { error: error.message }
-    }
-
-    // If user was created, add them to the users table
-    if (data?.user) {
-      const { error: insertError } = await supabase.from("users").insert({
-        id: data.user.id,
-        email: email.toString(),
-        first_name: firstName.toString(),
-        last_name: lastName.toString(),
-        phone: phone?.toString() || null,
-        role: role.toString(),
-      })
-
-      if (insertError) {
-        console.error("Error creating user record:", insertError)
-      }
     }
 
     return { success: "Check your email to confirm your account." }
