@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { LoginForm } from "@/components/auth/login-form"
 
+export const dynamic = "force-dynamic"
+
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)

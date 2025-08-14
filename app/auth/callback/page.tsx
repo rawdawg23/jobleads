@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect } from "react"
 
+export const dynamic = "force-dynamic"
+
 export default function AuthCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
