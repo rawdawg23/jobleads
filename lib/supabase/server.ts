@@ -1,56 +1,34 @@
-import { createServerClient } from "@supabase/ssr"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
-export const createClient = cache(() => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+// Check if Supabase environment variables are available
+export const isSupabaseConfigured =
+  typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
+  typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-  if (!supabaseUrl || !supabaseKey) {
+// Create a cached version of the Supabase client for Server Components
+export const createClient = cache(() => {
+  const cookieStore = cookies()
+
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase environment variables are not set. Using dummy client.")
     return {
       auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
-        signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signOut: async () => ({ error: null }),
-        exchangeCodeForSession: async () => ({ data: null, error: null }),
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       },
       from: () => ({
         select: () => ({
           eq: () => ({
-            single: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+            single: () => Promise.resolve({ data: null, error: null }),
           }),
-          order: () => ({ data: [], error: null }),
-        }),
-        insert: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        update: () => ({
-          eq: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        }),
-        delete: () => ({
-          eq: async () => ({ data: null, error: { message: "Supabase not configured" } }),
         }),
       }),
-    } as any
+    }
   }
 
-  const cookieStore = cookies()
-
-  return createServerClient(supabaseUrl, supabaseKey, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: any) {
-        cookieStore.set({ name, value: "", ...options })
-      },
-    },
-  })
+  return createServerComponentClient({ cookies: () => cookieStore })
 })
-
-export const isSupabaseConfigured = !!(
-  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)

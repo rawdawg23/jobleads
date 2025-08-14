@@ -1,8 +1,8 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { getRedirectPath } from "@/lib/auth-utils"
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -16,7 +16,8 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -29,11 +30,21 @@ export async function signIn(prevState: any, formData: FormData) {
     }
 
     if (data.user) {
+      // Get user role from database
       const { data: userData } = await supabase.from("users").select("role").eq("id", data.user.id).single()
-
       const role = userData?.role || "customer"
-      const redirectPath = getRedirectPath(role)
-      redirect(redirectPath)
+
+      // Redirect based on role
+      switch (role) {
+        case "admin":
+          redirect("/admin")
+          break
+        case "dealer":
+          redirect("/dealer")
+          break
+        default:
+          redirect("/dashboard")
+      }
     }
 
     return { success: true }
@@ -59,7 +70,8 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "Email, password, first name, and last name are required" }
   }
 
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -74,7 +86,7 @@ export async function signUp(prevState: any, formData: FormData) {
         },
         emailRedirectTo:
           process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "https://jobleads-ldys.vercel.app"}/auth/callback`,
+          `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
       },
     })
 
@@ -83,6 +95,7 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (data?.user) {
+      // Create user record in database
       const { error: dbError } = await supabase.from("users").insert({
         id: data.user.id,
         email: email.toString(),
@@ -94,7 +107,6 @@ export async function signUp(prevState: any, formData: FormData) {
 
       if (dbError) {
         console.error("Database error:", dbError)
-        // Don't return error here as auth was successful
       }
     }
 
@@ -106,13 +118,9 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = createClient()
+  const cookieStore = cookies()
+  const supabase = createServerActionClient({ cookies: () => cookieStore })
 
-  try {
-    await supabase.auth.signOut()
-    redirect("/auth/login")
-  } catch (error) {
-    console.error("Sign out error:", error)
-    redirect("/auth/login")
-  }
+  await supabase.auth.signOut()
+  redirect("/auth/login")
 }

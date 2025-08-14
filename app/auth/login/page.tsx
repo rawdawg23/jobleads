@@ -1,16 +1,8 @@
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
 
 export default async function LoginPage() {
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <h1 className="text-2xl font-bold mb-4 text-gray-900">Connect Supabase to get started</h1>
-      </div>
-    )
-  }
-
   // Check if user is already logged in
   const supabase = createClient()
   const {
