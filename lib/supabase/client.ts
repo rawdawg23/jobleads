@@ -13,13 +13,15 @@ export const createClient = () => {
         signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signOut: () => Promise.resolve({ error: null }),
-        onAuthStateChange: () => ({
-          data: {
-            subscription: {
-              unsubscribe: () => {},
+        onAuthStateChange: (callback: (event: string, session: any) => void) => {
+          return {
+            data: {
+              subscription: {
+                unsubscribe: () => {},
+              },
             },
-          },
-        }),
+          }
+        },
       },
       from: () => ({
         select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),

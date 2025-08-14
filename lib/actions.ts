@@ -74,7 +74,7 @@ export async function signUp(prevState: any, formData: FormData) {
         },
         emailRedirectTo:
           process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
+          `${process.env.NEXT_PUBLIC_SITE_URL || "https://jobleads-ldys.vercel.app"}/auth/callback`,
       },
     })
 

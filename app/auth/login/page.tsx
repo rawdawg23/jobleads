@@ -1,45 +1,37 @@
-"use client"
-
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
 
-export const dynamic = "force-dynamic"
-
-export default function LoginPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const supabase = createClient()
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        // If user is logged in, redirect to dashboard
-        if (session) {
-          router.push("/dashboard")
-          return
-        }
-      } catch (error) {
-        console.error("Error checking session:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkSession()
-  }, [router])
-
-  if (isLoading) {
+export default async function LoginPage() {
+  if (!isSupabaseConfigured) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <h1 className="text-2xl font-bold mb-4 text-gray-900">Connect Supabase to get started</h1>
       </div>
     )
+  }
+
+  // Check if user is already logged in
+  const supabase = createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  // If user is logged in, redirect to appropriate dashboard
+  if (session) {
+    const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+    const role = userData?.role || "customer"
+
+    switch (role) {
+      case "admin":
+        redirect("/admin")
+        break
+      case "dealer":
+        redirect("/dealer")
+        break
+      default:
+        redirect("/dashboard")
+    }
   }
 
   return (
