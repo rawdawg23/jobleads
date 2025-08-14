@@ -14,12 +14,19 @@ export const createClient = () => {
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
+        signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
+        signOut: () => Promise.resolve({ error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
+      from: () => ({
+        select: () => Promise.resolve({ data: [], error: null }),
+        insert: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
+      }),
     }
   }
 
   return createClientComponentClient()
 }
 
-// Create a singleton instance of the Supabase client for Client Components
-export const supabase = createClientComponentClient()
+// Only create client when needed through createClient() function
