@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/server"
 
 export async function PATCH(request: NextRequest, { params }: { params: { paymentId: string } }) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createClient()
 
     // Get authenticated user
     const {
