@@ -1,8 +1,98 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+
+// Simple Supabase client for server actions
+function createSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  return {
+    auth: {
+      async signInWithPassword({ email, password }: { email: string; password: string }) {
+        const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({ email, password }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          return { error: { message: data.error_description || "Invalid credentials" } }
+        }
+
+        // Set auth cookie
+        const cookieStore = cookies()
+        cookieStore.set("supabase-auth-token", data.access_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: data.expires_in,
+        })
+
+        return { data, error: null }
+      },
+
+      async signUp({ email, password, options }: { email: string; password: string; options?: any }) {
+        const response = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            confirm: true,
+            data: options?.data || {},
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          return { error: { message: data.error_description || "Sign up failed" }, data: null }
+        }
+
+        return { data: { user: data.user }, error: null }
+      },
+
+      async signOut() {
+        const cookieStore = cookies()
+        cookieStore.delete("supabase-auth-token")
+        return { error: null }
+      },
+    },
+
+    from(table: string) {
+      return {
+        async insert(data: any) {
+          const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: supabaseAnonKey,
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify(data),
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            return { error }
+          }
+
+          return { error: null }
+        },
+      }
+    },
+  }
+}
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -16,8 +106,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createSupabaseClient()
 
   try {
     const { error } = await supabase.auth.signInWithPassword({
@@ -29,7 +118,7 @@ export async function signIn(prevState: any, formData: FormData) {
       return { error: error.message }
     }
 
-    return { success: true }
+    redirect("/dashboard")
   } catch (error) {
     console.error("Login error:", error)
     return { error: "An unexpected error occurred. Please try again." }
@@ -52,8 +141,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "All required fields must be filled" }
   }
 
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
+  const supabase = createSupabaseClient()
 
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -94,9 +182,7 @@ export async function signUp(prevState: any, formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = cookies()
-  const supabase = createServerActionClient({ cookies: () => cookieStore })
-
+  const supabase = createSupabaseClient()
   await supabase.auth.signOut()
   redirect("/auth/login")
 }
