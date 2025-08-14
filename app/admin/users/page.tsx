@@ -1,18 +1,71 @@
-import { requireRole } from "@/lib/auth-utils"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Shield, ArrowLeft, Mail, Phone, Calendar } from "lucide-react"
+import { Shield, ArrowLeft, Mail, Phone, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-export default async function AdminUsersPage() {
-  const user = await requireRole(["admin"])
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  phone: string | null
+  role: string
+  created_at: string
+}
+
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
   const supabase = createClient()
 
-  // Fetch all users with their details
-  const { data: users } = await supabase.from("users").select("*").order("created_at", { ascending: false })
+  useEffect(() => {
+    async function checkAuthAndLoadUsers() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          router.push("/auth/login")
+          return
+        }
+
+        const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
+
+        if (!userData || userData.role !== "admin") {
+          router.push("/")
+          return
+        }
+
+        const { data: usersData, error: usersError } = await supabase
+          .from("users")
+          .select("*")
+          .order("created_at", { ascending: false })
+
+        if (usersError) {
+          setError("Failed to load users")
+          return
+        }
+
+        setUsers(usersData || [])
+      } catch (err) {
+        setError("An error occurred while loading users")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuthAndLoadUsers()
+  }, [router, supabase])
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -32,6 +85,28 @@ export default async function AdminUsersPage() {
       month: "short",
       year: "numeric",
     })
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading users...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
