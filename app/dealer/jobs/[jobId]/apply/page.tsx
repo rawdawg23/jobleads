@@ -1,54 +1,98 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Car, MapPin, Wrench } from "lucide-react"
+import { Car, MapPin, Wrench, Loader2 } from "lucide-react"
 
-export default async function ApplyJobPage({ params }: { params: { jobId: string } }) {
+export const dynamic = "force-dynamic"
+
+export default function ApplyJobPage({ params }: { params: { jobId: string } }) {
+  const [loading, setLoading] = useState(true)
+  const [job, setJob] = useState<any>(null)
+  const [dealer, setDealer] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
   const supabase = createClient()
 
-  // Check authentication
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login")
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          router.push("/auth/login")
+          return
+        }
+
+        const { data: dealerData } = await supabase.from("dealers").select("*").eq("user_id", user.id).single()
+        if (!dealerData || dealerData.status !== "active") {
+          router.push("/dealer/jobs")
+          return
+        }
+        setDealer(dealerData)
+
+        const { data: jobData } = await supabase
+          .from("jobs")
+          .select(`
+            *,
+            users!jobs_customer_id_fkey(first_name, last_name, email)
+          `)
+          .eq("id", params.jobId)
+          .single()
+
+        if (!jobData || jobData.status !== "open") {
+          router.push("/dealer/jobs")
+          return
+        }
+        setJob(jobData)
+
+        const { data: existingApplication } = await supabase
+          .from("job_applications")
+          .select("id")
+          .eq("job_id", jobData.id)
+          .eq("dealer_id", dealerData.id)
+          .single()
+
+        if (existingApplication) {
+          router.push(`/dealer/jobs/${jobData.id}`)
+          return
+        }
+      } catch (err) {
+        console.error("Error loading data:", err)
+        setError("Failed to load job details")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [params.jobId, router, supabase])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
   }
 
-  // Get dealer profile
-  const { data: dealer } = await supabase.from("dealers").select("*").eq("user_id", user.id).single()
-
-  if (!dealer || dealer.status !== "active") {
-    redirect("/dealer/jobs")
-  }
-
-  // Get job details
-  const { data: job } = await supabase
-    .from("jobs")
-    .select(`
-      *,
-      users!jobs_customer_id_fkey(first_name, last_name, email)
-    `)
-    .eq("id", params.jobId)
-    .single()
-
-  if (!job || job.status !== "open") {
-    redirect("/dealer/jobs")
-  }
-
-  // Check if already applied
-  const { data: existingApplication } = await supabase
-    .from("job_applications")
-    .select("id")
-    .eq("job_id", job.id)
-    .eq("dealer_id", dealer.id)
-    .single()
-
-  if (existingApplication) {
-    redirect(`/dealer/jobs/${job.id}`)
+  if (error || !job || !dealer) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-red-600">{error || "Job not found"}</p>
+        </div>
+      </div>
+    )
   }
 
   return (

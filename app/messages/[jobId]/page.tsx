@@ -1,86 +1,135 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send, User, Car } from "lucide-react"
+import { ArrowLeft, Send, User, Car, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-export default async function ChatPage({ params }: { params: { jobId: string } }) {
+export const dynamic = "force-dynamic"
+
+export default function ChatPage({ params }: { params: { jobId: string } }) {
+  const [loading, setLoading] = useState(true)
+  const [job, setJob] = useState<any>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [dealerId, setDealerId] = useState<string | null>(null)
+  const [dealerInfo, setDealerInfo] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
   const supabase = createClient()
 
-  // Check authentication
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login")
-  }
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          router.push("/auth/login")
+          return
+        }
 
-  // Get user profile
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+        const { data: profileData } = await supabase.from("users").select("role").eq("id", user.id).single()
+        if (!profileData) {
+          router.push("/auth/login")
+          return
+        }
+        setProfile(profileData)
 
-  if (!profile) {
-    redirect("/auth/login")
-  }
+        const { data: jobData } = await supabase
+          .from("jobs")
+          .select(`
+            *,
+            users!jobs_customer_id_fkey(first_name, last_name, email)
+          `)
+          .eq("id", params.jobId)
+          .single()
 
-  // Get job details
-  const { data: job } = await supabase
-    .from("jobs")
-    .select(`
-      *,
-      users!jobs_customer_id_fkey(first_name, last_name, email)
-    `)
-    .eq("id", params.jobId)
-    .single()
+        if (!jobData) {
+          router.push("/messages")
+          return
+        }
+        setJob(jobData)
 
-  if (!job) {
-    redirect("/messages")
-  }
+        // Check access permissions
+        let dealerIdValue: string | null = null
+        if (profileData.role === "customer" && jobData.customer_id !== user.id) {
+          router.push("/messages")
+          return
+        } else if (profileData.role === "dealer") {
+          const { data: dealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
+          if (!dealer) {
+            router.push("/messages")
+            return
+          }
+          dealerIdValue = dealer.id
+          setDealerId(dealerIdValue)
 
-  // Check access permissions
-  let dealerId: string | null = null
-  if (profile.role === "customer" && job.customer_id !== user.id) {
-    redirect("/messages")
-  } else if (profile.role === "dealer") {
-    const { data: dealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
-    if (!dealer) {
-      redirect("/messages")
+          const { data: application } = await supabase
+            .from("job_applications")
+            .select("id")
+            .eq("job_id", params.jobId)
+            .eq("dealer_id", dealer.id)
+            .single()
+
+          if (!application) {
+            router.push("/messages")
+            return
+          }
+        }
+
+        const { data: messagesData } = await supabase
+          .from("messages")
+          .select(`
+            *,
+            users!messages_sender_id_fkey(first_name, last_name, role),
+            dealers(business_name)
+          `)
+          .eq("job_id", params.jobId)
+          .order("created_at", { ascending: true })
+
+        setMessages(messagesData || [])
+
+        if (profileData.role === "customer" && messagesData && messagesData.length > 0) {
+          const dealerMessage = messagesData.find((msg: any) => msg.dealer_id)
+          if (dealerMessage) {
+            setDealerInfo(dealerMessage.dealers)
+          }
+        }
+      } catch (err) {
+        console.error("Error loading data:", err)
+        setError("Failed to load messages")
+      } finally {
+        setLoading(false)
+      }
     }
-    dealerId = dealer.id
 
-    // Check if dealer has applied to this job
-    const { data: application } = await supabase
-      .from("job_applications")
-      .select("id")
-      .eq("job_id", params.jobId)
-      .eq("dealer_id", dealer.id)
-      .single()
+    loadData()
+  }, [params.jobId, router, supabase])
 
-    if (!application) {
-      redirect("/messages")
-    }
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
   }
 
-  // Get messages
-  const { data: messages } = await supabase
-    .from("messages")
-    .select(`
-      *,
-      users!messages_sender_id_fkey(first_name, last_name, role),
-      dealers(business_name)
-    `)
-    .eq("job_id", params.jobId)
-    .order("created_at", { ascending: true })
-
-  // Get dealer info for customer view
-  let dealerInfo: any = null
-  if (profile.role === "customer" && messages && messages.length > 0) {
-    const dealerMessage = messages.find((msg: any) => msg.dealer_id)
-    if (dealerMessage) {
-      dealerInfo = dealerMessage.dealers
-    }
+  if (error || !job || !profile) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-red-600">{error || "Messages not found"}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -122,17 +171,17 @@ export default async function ChatPage({ params }: { params: { jobId: string } }
                 messages.map((message: any) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_id === user.id ? "justify-end" : "justify-start"}`}
+                    className={`flex ${message.sender_id === profile.id ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.sender_id === user.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
+                        message.sender_id === profile.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <User className="h-3 w-3" />
                         <span className="text-xs font-medium">
-                          {message.sender_id === user.id
+                          {message.sender_id === profile.id
                             ? "You"
                             : message.users.role === "dealer"
                               ? message.dealers?.business_name || "Dealer"

@@ -7,7 +7,31 @@ export const createClient = cache(() => {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase environment variables")
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null }, error: null }),
+        getSession: async () => ({ data: { session: null }, error: null }),
+        signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        signOut: async () => ({ error: null }),
+        exchangeCodeForSession: async () => ({ data: null, error: null }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+          }),
+          order: () => ({ data: [], error: null }),
+        }),
+        insert: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        update: () => ({
+          eq: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        }),
+        delete: () => ({
+          eq: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        }),
+      }),
+    } as any
   }
 
   const cookieStore = cookies()
@@ -27,4 +51,6 @@ export const createClient = cache(() => {
   })
 })
 
-export const isSupabaseConfigured = true
+export const isSupabaseConfigured = !!(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
