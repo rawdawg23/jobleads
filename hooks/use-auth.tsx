@@ -1,10 +1,20 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
-import { supabase, type User } from "@/lib/supabase"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
+
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  phone?: string
+  role: string
+  created_at: string
+  updated_at: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -27,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     // Get initial session
@@ -51,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -96,7 +107,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const waitTimeMatch = error.message.match(/(\d+) seconds/)
           const waitTime = waitTimeMatch ? Number.parseInt(waitTimeMatch[1]) : 60
 
-          // Return a special error that the UI can handle
           return {
             error: `Creating account automatically in ${waitTime} seconds...`,
             isRateLimit: true,

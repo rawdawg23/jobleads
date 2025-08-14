@@ -1,88 +1,55 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/use-auth"
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
-interface AdminStats {
-  totalUsers: number
-  activeDealers: number
-  activeJobs: number
-  monthlyRevenue: number
-}
-
-export default function AdminDashboardPage() {
-  const { user, loading, isAdmin } = useAuth()
-  const router = useRouter()
-  const [stats, setStats] = useState<AdminStats>({
-    totalUsers: 0,
-    activeDealers: 0,
-    activeJobs: 0,
-    monthlyRevenue: 0,
-  })
-  const [loadingStats, setLoadingStats] = useState(true)
-
-  useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
-      router.push("/auth/login")
-    }
-  }, [user, loading, isAdmin, router])
-
-  useEffect(() => {
-    if (user && isAdmin) {
-      fetchAdminStats()
-    }
-  }, [user, isAdmin])
-
-  const fetchAdminStats = async () => {
-    try {
-      const supabase = createClient()
-
-      const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
-        supabase.from("users").select("id"),
-        supabase.from("dealers").select("id, status").eq("status", "active"),
-        supabase.from("jobs").select("id, status").eq("status", "open"),
-        supabase
-          .from("payments")
-          .select("amount")
-          .eq("status", "completed")
-          .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-      ])
-
-      const monthlyRevenue = paymentsResult.data?.reduce((sum, payment) => sum + payment.amount, 0) || 0
-
-      setStats({
-        totalUsers: usersResult.data?.length || 0,
-        activeDealers: dealersResult.data?.length || 0,
-        activeJobs: jobsResult.data?.length || 0,
-        monthlyRevenue: monthlyRevenue / 100, // Convert from pence to pounds
-      })
-    } catch (error) {
-      console.error("Failed to fetch admin stats:", error)
-    } finally {
-      setLoadingStats(false)
-    }
-  }
-
-  if (loading) {
+export default async function AdminDashboardPage() {
+  // If Supabase is not configured, show setup message
+  if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="h-12 w-12 text-blue-600 animate-pulse mx-auto mb-4" />
-          <p className="text-slate-600">Loading admin dashboard...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <h1 className="text-2xl font-bold mb-4">Connect Supabase to get started</h1>
       </div>
     )
   }
 
-  if (!user || !isAdmin) {
-    return null
+  // Check authentication and admin role server-side
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  // Get user profile to check role
+  const { data: userProfile } = await supabase.from("users").select("*").eq("id", user.id).single()
+
+  if (!userProfile || userProfile.role !== "admin") {
+    redirect("/dashboard")
+  }
+
+  // Fetch admin stats
+  const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
+    supabase.from("users").select("id"),
+    supabase.from("dealers").select("id, status").eq("status", "active"),
+    supabase.from("jobs").select("id, status").eq("status", "open"),
+    supabase
+      .from("payments")
+      .select("amount")
+      .eq("status", "completed")
+      .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+  ])
+
+  const stats = {
+    totalUsers: usersResult.data?.length || 0,
+    activeDealers: dealersResult.data?.length || 0,
+    activeJobs: jobsResult.data?.length || 0,
+    monthlyRevenue: (paymentsResult.data?.reduce((sum, payment) => sum + payment.amount, 0) || 0) / 100,
   }
 
   return (
@@ -92,12 +59,12 @@ export default function AdminDashboardPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Shield className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-slate-900">Admin Dashboard</span>
+            <span className="text-2xl font-bold text-slate-900">CTEK JOB LEADS Admin</span>
           </Link>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-slate-900">
-                {user.first_name} {user.last_name}
+                {userProfile.first_name} {userProfile.last_name}
               </span>
               <Badge variant="destructive">Admin</Badge>
             </div>
@@ -111,7 +78,7 @@ export default function AdminDashboardPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Admin Control Panel</h1>
-          <p className="text-slate-600">Manage the ECU Remap Pro platform</p>
+          <p className="text-slate-600">Manage the CTEK JOB LEADS platform</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -219,7 +186,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{loadingStats ? "..." : stats.totalUsers}</div>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalUsers}</div>
                   <div className="text-sm text-slate-600">Total Users</div>
                 </div>
               </CardContent>
@@ -228,9 +195,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
-                    {loadingStats ? "..." : stats.activeDealers}
-                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">{stats.activeDealers}</div>
                   <div className="text-sm text-slate-600">Active Dealers</div>
                 </div>
               </CardContent>
@@ -239,9 +204,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-2">
-                    {loadingStats ? "..." : stats.activeJobs}
-                  </div>
+                  <div className="text-3xl font-bold text-purple-600 mb-2">{stats.activeJobs}</div>
                   <div className="text-sm text-slate-600">Active Jobs</div>
                 </div>
               </CardContent>
@@ -250,9 +213,7 @@ export default function AdminDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600 mb-2">
-                    {loadingStats ? "..." : `£${stats.monthlyRevenue.toFixed(0)}`}
-                  </div>
+                  <div className="text-3xl font-bold text-orange-600 mb-2">£{stats.monthlyRevenue.toFixed(0)}</div>
                   <div className="text-sm text-slate-600">Monthly Revenue</div>
                 </div>
               </CardContent>
