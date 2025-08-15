@@ -1,13 +1,40 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase"
+
+interface DynoData {
+  power: number
+  torque: number
+  rpm: number
+  temp: number
+  isLive: boolean
+}
+
+interface CarMeet {
+  location: string
+  distance: string
+  attendees: number
+  time: string
+  id: string | null
+  status: string
+  lastUpdated: Date
+  isLiveUpdating: boolean
+}
+
+interface Stats {
+  totalJobs: number
+  activeDealers: number
+  completedRemaps: number
+}
 
 export default function HomePage() {
-  const [dynoData] = useState({
+  const [supabaseClient, setSupabaseClient] = useState<any>(null)
+  const [dynoData, setDynoData] = useState<DynoData>({
     power: 245,
     torque: 380,
     rpm: 3500,
@@ -15,7 +42,7 @@ export default function HomePage() {
     isLive: false,
   })
 
-  const [nearestMeet] = useState({
+  const [nearestMeet, setNearestMeet] = useState<CarMeet>({
     location: "Birmingham Car Park",
     distance: "2.3 miles",
     attendees: 12,
@@ -28,12 +55,234 @@ export default function HomePage() {
 
   const [diagnosticProgress, setDiagnosticProgress] = useState(0)
   const [isScanning, setIsScanning] = useState(false)
-  const [stats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalJobs: 47,
     activeDealers: 23,
     completedRemaps: 156,
   })
 
+  // Initialize Supabase client safely
+  useEffect(() => {
+    try {
+      const client = createClient()
+      setSupabaseClient(client)
+      console.log("[v0] HomePage Supabase client initialized successfully")
+    } catch (error) {
+      console.error("[v0] Failed to initialize Supabase client:", error)
+    }
+  }, [])
+
+  // Fetch live dyno data
+  const fetchLiveDynoData = useCallback(async () => {
+    if (!supabaseClient) return
+
+    try {
+      const { data: sessions, error: sessionsError } = await supabaseClient
+        .from("dyno_sessions")
+        .select(`
+          *,
+          sensor_readings (
+            power_hp,
+            torque_nm,
+            rpm,
+            ecu_temp,
+            timestamp
+          )
+        `)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+
+      if (sessionsError) {
+        console.error("[v0] Error fetching dyno data:", sessionsError.message)
+        return
+      }
+
+      if (sessions && sessions.length > 0) {
+        const session = sessions[0]
+        const latestReading = session.sensor_readings?.[0]
+
+        if (latestReading) {
+          setDynoData({
+            power: Math.round(latestReading.power_hp || 245),
+            torque: Math.round(latestReading.torque_nm || 380),
+            rpm: latestReading.rpm || 3500,
+            temp: Math.round(latestReading.ecu_temp || 89),
+            isLive: true,
+          })
+          console.log("[v0] Updated with live dyno data")
+        }
+      } else {
+        console.log("[v0] No active dyno sessions found, using demo data")
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching dyno data:", error)
+    }
+  }, [supabaseClient])
+
+  // Fetch nearest car meet
+  const fetchNearestCarMeet = useCallback(async () => {
+    if (!supabaseClient) return
+
+    try {
+      const { data: meets, error: meetsError } = await supabaseClient
+        .from("car_meet_locations")
+        .select(`
+          *,
+          car_meet_attendees!inner (
+            user_id,
+            payment_status
+          )
+        `)
+        .eq("status", "active")
+        .gte("event_date", new Date().toISOString())
+        .order("event_date", { ascending: true })
+        .limit(1)
+
+      if (meetsError) {
+        console.error("[v0] Error fetching car meet data:", meetsError.message)
+        return
+      }
+
+      if (meets && meets.length > 0) {
+        const meet = meets[0]
+        const confirmedAttendees =
+          meet.car_meet_attendees?.filter(
+            (attendee: any) => attendee.payment_status === "paid" || attendee.payment_status === "confirmed",
+          ).length || 0
+
+        const eventDate = new Date(meet.event_date)
+        const timeString = eventDate.toLocaleDateString("en-GB", {
+          weekday: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+
+        setNearestMeet({
+          location: meet.location_name || "Birmingham Car Park",
+          distance: "2.3 miles", // Would calculate based on user location
+          attendees: confirmedAttendees,
+          time: timeString,
+          id: meet.id,
+          status: meet.status,
+          lastUpdated: new Date(),
+          isLiveUpdating: true,
+        })
+        console.log("[v0] Updated with live car meet data")
+      } else {
+        console.log("[v0] No car meets found, using demo data")
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching car meet data:", error)
+    }
+  }, [supabaseClient])
+
+  // Fetch platform stats
+  const fetchStats = useCallback(async () => {
+    if (!supabaseClient) return
+
+    try {
+      const [jobsResult, dealersResult, remapsResult] = await Promise.allSettled([
+        supabaseClient.from("jobs").select("id", { count: "exact", head: true }),
+        supabaseClient.from("companies").select("id", { count: "exact", head: true }),
+        supabaseClient.from("dyno_sessions").select("id", { count: "exact", head: true }),
+      ])
+
+      const newStats = { ...stats }
+
+      if (jobsResult.status === "fulfilled" && jobsResult.value.count !== null) {
+        newStats.totalJobs = jobsResult.value.count
+      }
+
+      if (dealersResult.status === "fulfilled" && dealersResult.value.count !== null) {
+        newStats.activeDealers = dealersResult.value.count
+      }
+
+      if (remapsResult.status === "fulfilled" && remapsResult.value.count !== null) {
+        newStats.completedRemaps = remapsResult.value.count
+      }
+
+      setStats(newStats)
+      console.log("[v0] Updated platform stats")
+    } catch (error) {
+      console.error("[v0] Error fetching stats:", error)
+    }
+  }, [supabaseClient, stats])
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!supabaseClient) return
+
+    let dynoSubscription: any
+    let meetSubscription: any
+
+    try {
+      // Subscribe to dyno session changes
+      dynoSubscription = supabaseClient
+        .channel("dyno_sessions_channel")
+        .on("postgres_changes", { event: "*", schema: "public", table: "dyno_sessions" }, () => {
+          console.log("[v0] Dyno session updated, refetching data")
+          fetchLiveDynoData()
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "sensor_readings" }, () => {
+          console.log("[v0] Sensor reading updated, refetching data")
+          fetchLiveDynoData()
+        })
+        .subscribe()
+
+      // Subscribe to car meet changes
+      meetSubscription = supabaseClient
+        .channel("car_meets_channel")
+        .on("postgres_changes", { event: "*", schema: "public", table: "car_meet_locations" }, () => {
+          console.log("[v0] Car meet updated, refetching data")
+          fetchNearestCarMeet()
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "car_meet_attendees" }, () => {
+          console.log("[v0] Car meet attendees updated, refetching data")
+          fetchNearestCarMeet()
+        })
+        .subscribe()
+
+      console.log("[v0] Real-time subscriptions established")
+    } catch (error) {
+      console.error("[v0] Error setting up subscriptions:", error)
+    }
+
+    return () => {
+      try {
+        if (dynoSubscription) {
+          supabaseClient.removeChannel(dynoSubscription)
+        }
+        if (meetSubscription) {
+          supabaseClient.removeChannel(meetSubscription)
+        }
+      } catch (error) {
+        console.error("[v0] Error cleaning up subscriptions:", error)
+      }
+    }
+  }, [supabaseClient, fetchLiveDynoData, fetchNearestCarMeet])
+
+  // Initial data fetch and periodic updates
+  useEffect(() => {
+    if (!supabaseClient) return
+
+    const fetchAllData = async () => {
+      try {
+        await Promise.allSettled([fetchLiveDynoData(), fetchNearestCarMeet(), fetchStats()])
+      } catch (error) {
+        console.error("[v0] Error in initial data fetch:", error)
+      }
+    }
+
+    fetchAllData()
+
+    // Set up periodic updates as fallback
+    const interval = setInterval(fetchAllData, 300000) // 5 minutes
+
+    return () => clearInterval(interval)
+  }, [supabaseClient, fetchLiveDynoData, fetchNearestCarMeet, fetchStats])
+
+  // Diagnostic scanning animation
   useEffect(() => {
     let diagnosticInterval: NodeJS.Timeout
 
@@ -61,7 +310,7 @@ export default function HomePage() {
     setDiagnosticProgress(0)
   }
 
-  console.log("[v0] Minimal HomePage component rendered successfully")
+  console.log("[v0] HomePage component rendering with real-time data integration")
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -220,15 +469,13 @@ export default function HomePage() {
                   <div className="text-green-400 text-sm font-medium">{nearestMeet.time}</div>
                   <div className="text-xs text-slate-400">
                     {nearestMeet.isLiveUpdating ? "🔴 Live Updates" : "📊 Demo Data"}
-                    {nearestMeet.lastUpdated && (
-                      <span className="ml-2">
-                        Updated{" "}
-                        {nearestMeet.lastUpdated.toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    )}
+                    <span className="ml-2">
+                      Updated{" "}
+                      {nearestMeet.lastUpdated.toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                 </div>
                 <Link href="/car-meets">

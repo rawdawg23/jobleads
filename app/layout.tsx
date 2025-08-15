@@ -161,7 +161,7 @@ export const metadata: Metadata = {
     "DC.description": "Professional ECU remapping and engine tuning services across the UK",
     "DC.publisher": "CTEK Professional Automotive Services",
     "DC.contributor": "Certified ECU Specialists",
-    "DC.date": new Date().toISOString(),
+    "DC.date": "2025-01-15T20:39:00.000Z",
     "DC.type": "Service",
     "DC.format": "text/html",
     "DC.identifier": "https://ctek.club",
