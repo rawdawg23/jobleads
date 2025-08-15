@@ -4,17 +4,47 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  CreditCard,
+  Users,
+  Wrench,
+  Settings,
+  BarChart3,
+  Shield,
+  Car,
+  Zap,
+  MessageSquare,
+  Calendar,
+  AlertTriangle,
+  TrendingUp,
+  Activity,
+  Database,
+  UserCheck,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase"
 
 interface Stats {
   totalUsers: number
   activeDealers: number
   activeJobs: number
   monthlyRevenue: number
+  totalVehicles: number
+  activeDynoSessions: number
+  carMeetEvents: number
+  totalBookings: number
+  pendingApplications: number
+  unreadMessages: number
+}
+
+interface RecentActivity {
+  id: string
+  type: "user_registration" | "job_posted" | "booking_created" | "dyno_session" | "car_meet"
+  description: string
+  timestamp: string
+  user_name?: string
 }
 
 export const dynamic = "force-dynamic"
@@ -23,13 +53,20 @@ export const runtime = "nodejs"
 export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [isBuildTime, setIsBuildTime] = useState(typeof window === "undefined")
-  const { user, loading, isAdmin } = useAuth()
+  const [user, setUser] = useState<any>(null)
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     activeDealers: 0,
     activeJobs: 0,
     monthlyRevenue: 0,
+    totalVehicles: 0,
+    activeDynoSessions: 0,
+    carMeetEvents: 0,
+    totalBookings: 0,
+    pendingApplications: 0,
+    unreadMessages: 0,
   })
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
   const router = useRouter()
 
@@ -40,25 +77,43 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!mounted || isBuildTime) return
+    loadAdminData()
+  }, [mounted, isBuildTime])
 
-    if (!loading && (!user || !isAdmin)) {
-      router.push("/auth/login")
-      return
-    }
-
-    if (user && isAdmin) {
-      loadStats()
-    }
-  }, [user, loading, isAdmin, router, mounted, isBuildTime])
-
-  const loadStats = async () => {
+  const loadAdminData = async () => {
     try {
       const supabase = createClient()
 
-      const [usersResult, companiesResult, jobsResult] = await Promise.all([
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/auth/login")
+        return
+      }
+      setUser(user)
+
+      const [
+        usersResult,
+        companiesResult,
+        jobsResult,
+        vehiclesResult,
+        dynoSessionsResult,
+        carMeetsResult,
+        bookingsResult,
+        applicationsResult,
+        messagesResult,
+      ] = await Promise.all([
         supabase.from("users").select("id", { count: "exact", head: true }),
         supabase.from("companies").select("id", { count: "exact", head: true }),
         supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("vehicles").select("id", { count: "exact", head: true }),
+        supabase.from("dyno_sessions").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("car_meet_locations").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("bookings").select("id", { count: "exact", head: true }),
+        supabase.from("applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("messages").select("id", { count: "exact", head: true }).eq("is_read", false),
       ])
 
       const { data: paymentsData } = await supabase
@@ -67,265 +122,456 @@ export default function AdminDashboardPage() {
         .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
         .eq("status", "completed")
 
-      const monthlyRevenue = paymentsData?.reduce((sum, payment) => sum + payment.amount, 0) || 0
+      const monthlyRevenue = paymentsData?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0
 
       setStats({
         totalUsers: usersResult.count || 0,
         activeDealers: companiesResult.count || 0,
         activeJobs: jobsResult.count || 0,
         monthlyRevenue,
+        totalVehicles: vehiclesResult.count || 0,
+        activeDynoSessions: dynoSessionsResult.count || 0,
+        carMeetEvents: carMeetsResult.count || 0,
+        totalBookings: bookingsResult.count || 0,
+        pendingApplications: applicationsResult.count || 0,
+        unreadMessages: messagesResult.count || 0,
       })
+
+      await loadRecentActivity()
     } catch (error) {
-      console.error("Error loading admin stats:", error)
-      setStats({
-        totalUsers: 0,
-        activeDealers: 0,
-        activeJobs: 0,
-        monthlyRevenue: 0,
-      })
+      console.error("Error loading admin data:", error)
     } finally {
       setLoadingStats(false)
     }
   }
 
-  if (!mounted || loading || loadingStats || isBuildTime) {
+  const loadRecentActivity = async () => {
+    try {
+      const supabase = createClient()
+
+      // Get recent activities from different tables
+      const activities: RecentActivity[] = []
+
+      // Recent user registrations
+      const { data: recentUsers } = await supabase
+        .from("users")
+        .select("id, first_name, last_name, created_at, role")
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      recentUsers?.forEach((user) => {
+        activities.push({
+          id: `user_${user.id}`,
+          type: "user_registration",
+          description: `New ${user.role} registered: ${user.first_name} ${user.last_name}`,
+          timestamp: user.created_at,
+          user_name: `${user.first_name} ${user.last_name}`,
+        })
+      })
+
+      // Recent job postings
+      const { data: recentJobs } = await supabase
+        .from("jobs")
+        .select("id, title, created_at")
+        .order("created_at", { ascending: false })
+        .limit(3)
+
+      recentJobs?.forEach((job) => {
+        activities.push({
+          id: `job_${job.id}`,
+          type: "job_posted",
+          description: `New job posted: ${job.title}`,
+          timestamp: job.created_at,
+        })
+      })
+
+      // Recent bookings
+      const { data: recentBookings } = await supabase
+        .from("bookings")
+        .select("id, created_at, users!customer_id(first_name, last_name)")
+        .order("created_at", { ascending: false })
+        .limit(3)
+
+      recentBookings?.forEach((booking) => {
+        activities.push({
+          id: `booking_${booking.id}`,
+          type: "booking_created",
+          description: `New ECU remapping booking by ${booking.users?.first_name} ${booking.users?.last_name}`,
+          timestamp: booking.created_at,
+        })
+      })
+
+      // Sort all activities by timestamp
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      setRecentActivity(activities.slice(0, 10))
+    } catch (error) {
+      console.error("Error loading recent activity:", error)
+    }
+  }
+
+  if (!mounted || loadingStats || isBuildTime) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-3xl float-animation"></div>
-          <div
-            className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-secondary/15 to-primary/15 rounded-full blur-3xl float-animation"
-            style={{ animationDelay: "2s" }}
-          ></div>
-        </div>
-        <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground/70">Loading admin dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">Loading admin dashboard...</p>
         </div>
       </div>
     )
   }
 
-  if (!user || !isAdmin) {
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <header className="bg-slate-800/50 backdrop-blur-xl border-b border-slate-700 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="p-2 bg-gradient-to-br from-primary to-secondary rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300">
+            <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300">
               <Shield className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              CTEK JOB LEADS Admin
+            <span className="text-2xl font-bold bg-gradient-to-r from-red-500 to-amber-500 bg-clip-text text-transparent">
+              CTEK ECU Admin
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg">
-              <span className="text-foreground font-medium">
-                {user.firstName} {user.lastName}
-              </span>
-              <Badge variant="destructive" className="bg-red-500/80 backdrop-blur-sm">
-                Admin
-              </Badge>
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 backdrop-blur-sm rounded-xl border border-slate-600 shadow-lg">
+              <span className="text-white font-medium">{user?.email?.split("@")[0]}</span>
+              <Badge className="bg-red-500/80 backdrop-blur-sm">Admin</Badge>
             </div>
             <Button
               variant="outline"
               asChild
-              className="border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300"
+              className="border-slate-600 bg-slate-700/20 backdrop-blur-sm hover:bg-slate-700/30 text-white"
             >
-              <Link href="/dashboard">Main Dashboard</Link>
+              <Link href="/">Main Site</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Title Section */}
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-            Admin Control Panel
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-amber-500 bg-clip-text text-transparent mb-2">
+            ECU Remapping Platform Admin
           </h1>
-          <p className="text-foreground/70">Manage the CTEK JOB LEADS platform</p>
+          <p className="text-slate-300">Manage the complete ECU remapping ecosystem</p>
         </div>
 
-        {/* Admin Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Payment Management */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-secondary/80 to-secondary rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <CreditCard className="h-5 w-5 text-white" />
-                </div>
-                Payment Management
-              </CardTitle>
-              <CardDescription className="text-foreground/70">Verify and manage bank transfer payments</CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full btn-primary">
-                <Link href="/admin/payments">Manage Payments</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">{stats.totalUsers}</div>
+              <p className="text-xs text-slate-400">Platform members</p>
             </CardContent>
           </Card>
 
-          {/* User Management */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-green-500/80 to-green-600/80 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                User Management
-              </CardTitle>
-              <CardDescription className="text-foreground/70">View and manage all platform users</CardDescription>
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Active Dealers</CardTitle>
+              <Wrench className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              >
-                <Link href="/admin/users">Manage Users</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">{stats.activeDealers}</div>
+              <p className="text-xs text-slate-400">ECU specialists</p>
             </CardContent>
           </Card>
 
-          {/* Dealer Applications */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-primary/80 to-primary rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <Wrench className="h-5 w-5 text-white" />
-                </div>
-                Dealer Applications
-              </CardTitle>
-              <CardDescription className="text-foreground/70">Review and approve dealer registrations</CardDescription>
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Registered Vehicles</CardTitle>
+              <Car className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              >
-                <Link href="/admin/dealers">Review Applications</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">{stats.totalVehicles}</div>
+              <p className="text-xs text-slate-400">In database</p>
             </CardContent>
           </Card>
 
-          {/* Platform Analytics */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-orange-500/80 to-orange-600/80 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <BarChart3 className="h-5 w-5 text-white" />
-                </div>
-                Platform Analytics
-              </CardTitle>
-              <CardDescription className="text-foreground/70">View platform statistics and reports</CardDescription>
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Monthly Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              >
-                <Link href="/admin/analytics">View Analytics</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">£{stats.monthlyRevenue.toLocaleString()}</div>
+              <p className="text-xs text-slate-400">This month</p>
             </CardContent>
           </Card>
 
-          {/* Job Management */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-red-500/80 to-red-600/80 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <Wrench className="h-5 w-5 text-white" />
-                </div>
-                Job Management
-              </CardTitle>
-              <CardDescription className="text-foreground/70">Monitor and manage all platform jobs</CardDescription>
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Active Dyno Sessions</CardTitle>
+              <Zap className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              >
-                <Link href="/admin/jobs">Manage Jobs</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">{stats.activeDynoSessions}</div>
+              <p className="text-xs text-slate-400">Live testing</p>
             </CardContent>
           </Card>
 
-          {/* System Settings */}
-          <Card className="hover:shadow-2xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 hover:scale-105 group">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-br from-slate-500/80 to-slate-600/80 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                  <Settings className="h-5 w-5 text-white" />
-                </div>
-                System Settings
-              </CardTitle>
-              <CardDescription className="text-foreground/70">
-                Configure platform settings and bank details
-              </CardDescription>
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Car Meet Events</CardTitle>
+              <Calendar className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-white/30 bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              >
-                <Link href="/admin/settings">System Settings</Link>
-              </Button>
+              <div className="text-2xl font-bold text-white">{stats.carMeetEvents}</div>
+              <p className="text-xs text-slate-400">Upcoming events</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Pending Applications</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.pendingApplications}</div>
+              <p className="text-xs text-slate-400">Need review</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Unread Messages</CardTitle>
+              <MessageSquare className="h-4 w-4 text-cyan-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.unreadMessages}</div>
+              <p className="text-xs text-slate-400">Platform messages</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Stats */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Platform Overview</h2>
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-secondary mb-2">{stats.totalUsers}</div>
-                  <div className="text-sm text-foreground/70">Total Users</div>
-                </div>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="management" className="space-y-6">
+          <TabsList className="bg-slate-800/50 border-slate-700">
+            <TabsTrigger value="management" className="data-[state=active]:bg-red-500">
+              Platform Management
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="data-[state=active]:bg-red-500">
+              Recent Activity
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-red-500">
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-            <Card className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">{stats.activeDealers}</div>
-                  <div className="text-sm text-foreground/70">Active Dealers</div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="management" className="space-y-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    User Management
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">
+                    Manage customers, dealers, and admin accounts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-red-500 hover:bg-red-600">
+                    <Link href="/admin/users">Manage Users</Link>
+                  </Button>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">{stats.activeJobs}</div>
-                  <div className="text-sm text-foreground/70">Active Jobs</div>
-                </div>
-              </CardContent>
-            </Card>
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Wrench className="h-5 w-5 text-white" />
+                    </div>
+                    Dealer Applications
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">
+                    Review and approve ECU specialist applications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-amber-500 hover:bg-amber-600">
+                    <Link href="/admin/dealers">Review Applications</Link>
+                  </Button>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600 mb-2">£{stats.monthlyRevenue.toFixed(0)}</div>
-                  <div className="text-sm text-foreground/70">Monthly Revenue</div>
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Car className="h-5 w-5 text-white" />
+                    </div>
+                    Vehicle Database
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">
+                    Manage registered vehicles and DVLA integration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-blue-500 hover:bg-blue-600">
+                    <Link href="/admin/vehicles">Manage Vehicles</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    Dyno Sessions
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">
+                    Monitor live dyno testing and performance data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-purple-500 hover:bg-purple-600">
+                    <Link href="/admin/dyno">Monitor Sessions</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <Calendar className="h-5 w-5 text-white" />
+                    </div>
+                    Car Meet Events
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">Manage car meet locations and events</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-orange-500 hover:bg-orange-600">
+                    <Link href="/admin/car-meets">Manage Events</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                      <CreditCard className="h-5 w-5 text-white" />
+                    </div>
+                    Payment Management
+                  </CardTitle>
+                  <CardDescription className="text-slate-300">Process payments and manage transactions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full bg-green-500 hover:bg-green-600">
+                    <Link href="/admin/payments">Manage Payments</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-6">
+            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-red-500" />
+                  Recent Platform Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            activity.type === "user_registration"
+                              ? "bg-blue-500/20"
+                              : activity.type === "job_posted"
+                                ? "bg-green-500/20"
+                                : activity.type === "booking_created"
+                                  ? "bg-purple-500/20"
+                                  : "bg-gray-500/20"
+                          }`}
+                        >
+                          {activity.type === "user_registration" && <UserCheck className="h-4 w-4 text-blue-400" />}
+                          {activity.type === "job_posted" && <Wrench className="h-4 w-4 text-green-400" />}
+                          {activity.type === "booking_created" && <Calendar className="h-4 w-4 text-purple-400" />}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm">{activity.description}</p>
+                          <p className="text-slate-400 text-xs">{new Date(activity.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-red-500" />
+                  Platform Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-white font-semibold">Quick Actions</h3>
+                    <div className="space-y-2">
+                      <Button asChild className="w-full bg-red-500 hover:bg-red-600 justify-start">
+                        <Link href="/admin/analytics">
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          View Detailed Analytics
+                        </Link>
+                      </Button>
+                      <Button asChild className="w-full bg-slate-700 hover:bg-slate-600 justify-start">
+                        <Link href="/admin/reports">
+                          <Database className="h-4 w-4 mr-2" />
+                          Generate Reports
+                        </Link>
+                      </Button>
+                      <Button asChild className="w-full bg-slate-700 hover:bg-slate-600 justify-start">
+                        <Link href="/admin/settings">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Platform Settings
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-white font-semibold">System Status</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Database</span>
+                        <Badge className="bg-green-500">Online</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">DVLA Integration</span>
+                        <Badge className="bg-green-500">Active</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Payment System</span>
+                        <Badge className="bg-green-500">Operational</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Real-time Updates</span>
+                        <Badge className="bg-green-500">Connected</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

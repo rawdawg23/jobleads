@@ -37,8 +37,13 @@ export default function HomePage() {
     console.log("[v0] HomePage component mounting")
     try {
       const client = createClient()
-      setSupabase(client)
-      console.log("[v0] Supabase client initialized successfully")
+      if (client && client.auth) {
+        setSupabase(client)
+        console.log("[v0] Supabase client initialized successfully")
+      } else {
+        console.error("[v0] Supabase client missing auth property")
+        setHasError(true)
+      }
     } catch (error) {
       console.error("[v0] Failed to initialize Supabase client:", error)
       setHasError(true)
@@ -46,7 +51,10 @@ export default function HomePage() {
   }, [])
 
   const fetchDynoData = useCallback(async () => {
-    if (!supabase) return
+    if (!supabase || !supabase.auth) {
+      console.warn("[v0] Supabase client not ready for dyno data fetch")
+      return
+    }
 
     try {
       const { data: sessions, error } = await supabase
@@ -107,7 +115,10 @@ export default function HomePage() {
   }, [supabase])
 
   const fetchCarMeetData = useCallback(async () => {
-    if (!supabase) return
+    if (!supabase || !supabase.auth) {
+      console.warn("[v0] Supabase client not ready for car meet data fetch")
+      return
+    }
 
     try {
       const { data: meets, error } = await supabase
@@ -167,7 +178,10 @@ export default function HomePage() {
   }, [supabase])
 
   const fetchStats = useCallback(async () => {
-    if (!supabase) return
+    if (!supabase || !supabase.auth) {
+      console.warn("[v0] Supabase client not ready for stats fetch")
+      return
+    }
 
     try {
       const [usersResult, companiesResult, jobsResult] = await Promise.allSettled([
@@ -198,7 +212,10 @@ export default function HomePage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!supabase || hasError) return
+    if (!supabase || !supabase.auth || hasError) {
+      console.warn("[v0] Skipping data fetch - client not ready or has error")
+      return
+    }
 
     const fetchAllData = async () => {
       try {
