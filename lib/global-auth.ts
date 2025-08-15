@@ -45,7 +45,7 @@ function ensureInitialized() {
     }
   }
 
-  if (globalSupabase && !globalAuthSubscription) {
+  if (globalSupabase && globalSupabase.auth && !globalAuthSubscription) {
     try {
       globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
         console.log("[v0] Global auth state change:", event, session ? "with session" : "no session")
@@ -128,5 +128,26 @@ export function getGlobalSupabase() {
   }
 
   ensureInitialized()
+
+  if (!globalSupabase || !globalSupabase.auth) {
+    console.warn("[v0] Global Supabase client not properly initialized, returning fallback")
+    return {
+      auth: {
+        signInWithPassword: async () => ({ data: null, error: new Error("Client not initialized") }),
+        signUp: async () => ({ data: null, error: new Error("Client not initialized") }),
+        signOut: async () => ({ error: new Error("Client not initialized") }),
+        onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: new Error("Client not initialized") }),
+          }),
+        }),
+        insert: async () => ({ data: null, error: new Error("Client not initialized") }),
+      }),
+    } as any
+  }
+
   return globalSupabase
 }
