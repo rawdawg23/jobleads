@@ -2,39 +2,39 @@
 @import "tw-animate-css";
 
 :root {
-  --background: #1f2937;
-  --foreground: #ffffff;
-  --card: #374151;
-  --card-foreground: #f1f5f9;
-  --popover: #6b7280;
-  --popover-foreground: #ffffff;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #d97706;
-  --secondary-foreground: #ffffff;
-  --muted: #4b5563;
-  --muted-foreground: #f1f5f9;
-  --accent: #ea580c;
-  --accent-foreground: #ffffff;
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-  --border: #374151;
-  --input: #374151;
-  --ring: rgba(139, 92, 246, 0.5);
-  --chart-1: #8b5cf6;
-  --chart-2: #f97316;
-  --chart-3: #ea580c;
-  --chart-4: #d97706;
-  --chart-5: #4b5563;
-  --radius: 0.5rem;
-  --sidebar: #1f2937;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #374151;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #8b5cf6;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #6b7280;
-  --sidebar-ring: rgba(139, 92, 246, 0.5);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 @theme inline {
@@ -78,38 +78,38 @@
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --popover: #334155;
-  --popover-foreground: #f8fafc;
-  --primary: #a855f7;
-  --primary-foreground: #ffffff;
-  --secondary: #f59e0b;
-  --secondary-foreground: #ffffff;
-  --muted: #475569;
-  --muted-foreground: #cbd5e1;
-  --accent: #f97316;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #334155;
-  --ring: rgba(168, 85, 247, 0.5);
-  --chart-1: #a855f7;
-  --chart-2: #f59e0b;
-  --chart-3: #f97316;
-  --chart-4: #eab308;
-  --chart-5: #64748b;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #1e293b;
-  --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #a855f7;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #334155;
-  --sidebar-ring: rgba(168, 85, 247, 0.5);
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
 }
 
 @layer base {
@@ -123,9 +123,9 @@
       135deg,
       #0f172a 0%,
       #1e293b 20%,
-      #334155 40%,
-      #475569 60%,
-      #334155 80%,
+      #7f1d1d 40%,
+      #991b1b 60%,
+      #7f1d1d 80%,
       #1e293b 90%,
       #0f172a 100%
     );
@@ -145,9 +145,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(234, 88, 12, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+    background-image: radial-gradient(circle at 20% 80%, rgba(220, 38, 38, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(220, 38, 38, 0.05) 0%, transparent 50%);
     animation: float-particles 20s ease-in-out infinite;
     pointer-events: none;
     z-index: -1;
@@ -275,51 +275,51 @@
 
   /* Updated glassmorphism classes for professional dark theme */
   .glass {
-    background: rgba(139, 92, 246, 0.08);
+    background: rgba(220, 38, 38, 0.08);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(220, 38, 38, 0.1);
   }
 
   .glass-grey {
     background: rgba(55, 65, 81, 0.6);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(220, 38, 38, 0.15);
   }
 
   .glass-card {
     background: rgba(30, 41, 59, 0.8);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(220, 38, 38, 0.15);
   }
 
   .glass-card-grey {
     background: rgba(71, 85, 105, 0.7);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(220, 38, 38, 0.2);
   }
 
   .glass-button {
-    background: rgba(139, 92, 246, 0.15);
+    background: rgba(220, 38, 38, 0.15);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
-    border: 1px solid rgba(139, 92, 246, 0.4);
+    border: 1px solid rgba(220, 38, 38, 0.4);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(139, 92, 246, 0.2);
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(220, 38, 38, 0.2);
   }
 
   .glass-button:hover {
-    background: rgba(139, 92, 246, 0.25);
+    background: rgba(220, 38, 38, 0.25);
     transform: translateY(-3px);
-    box-shadow: 0 12px 35px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(139, 92, 246, 0.3);
-    border: 1px solid rgba(139, 92, 246, 0.6);
+    box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(220, 38, 38, 0.3);
+    border: 1px solid rgba(220, 38, 38, 0.6);
   }
 
   /* Added LED navigation effects */
@@ -360,6 +360,18 @@
     animation-delay: 0.5s;
   }
 
+  .led-amber {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 12px #f59e0b, 0 0 24px #f59e0b, 0 0 36px #f59e0b;
+    animation: led-pulse-amber 2s ease-in-out infinite;
+    animation-delay: 0.75s;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
   @keyframes led-pulse-purple {
     0%,
     100% {
@@ -396,6 +408,18 @@
     }
   }
 
+  @keyframes led-pulse-amber {
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
   /* enhanced scrollbar styling for professional dark theme */
   ::-webkit-scrollbar {
     width: 10px;
@@ -417,55 +441,69 @@
   }
 
   /* added professional animation classes for ECU tools */
-  @keyframes pulse-glow {
+  @keyframes power-surge {
     0%,
     100% {
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
       transform: scale(1);
     }
     50% {
-      box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+      box-shadow: 0 0 40px rgba(220, 38, 38, 0.8), 0 0 60px rgba(245, 158, 11, 0.4);
       transform: scale(1.02);
     }
   }
 
-  @keyframes data-flow {
+  @keyframes dyno-sweep {
     0% {
       transform: translateX(-100%) scaleX(0);
+      opacity: 0;
     }
     50% {
       transform: translateX(0%) scaleX(1);
+      opacity: 1;
     }
     100% {
       transform: translateX(100%) scaleX(0);
+      opacity: 0;
     }
   }
 
-  @keyframes diagnostic-scan {
-    0% {
-      width: 0%;
-      background-position: 0% 50%;
+  @keyframes rpm-gauge {
+    0%,
+    100% {
+      color: #ffffff;
     }
     50% {
-      width: 100%;
-      background-position: 100% 50%;
+      color: #dc2626;
+      text-shadow: 0 0 10px #dc2626;
+    }
+  }
+
+  @keyframes ecu-scan {
+    0% {
+      background-position: -200% 0;
     }
     100% {
-      width: 0%;
-      background-position: 0% 50%;
+      background-position: 200% 0;
     }
   }
 
-  .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
+  .animate-power-surge {
+    animation: power-surge 3s ease-in-out infinite;
   }
 
-  .animate-data-flow {
-    animation: data-flow 2s ease-in-out infinite;
+  .animate-dyno-sweep {
+    animation: dyno-sweep 2s ease-in-out infinite;
   }
 
-  .animate-diagnostic-scan {
-    animation: diagnostic-scan 4s ease-in-out infinite;
+  .animate-rpm-gauge {
+    animation: rpm-gauge 2s ease-in-out infinite;
+  }
+
+  .animate-ecu-scan {
+    background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.8), transparent);
+    background-size: 200% 100%;
+    animation: ecu-scan 2s linear infinite;
   }
 
   /* Added higher specificity and visibility fixes for glass effects */
@@ -473,8 +511,8 @@
     background: rgba(55, 65, 81, 0.6) !important;
     backdrop-filter: blur(24px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-    border: 1px solid rgba(139, 92, 246, 0.3) !important;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(139, 92, 246, 0.15) !important;
+    border: 1px solid rgba(220, 38, 38, 0.3) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(220, 38, 38, 0.15) !important;
     color: #ffffff !important;
     position: relative !important;
     z-index: 1 !important;
@@ -484,8 +522,8 @@
     background: rgba(30, 41, 59, 0.8) !important;
     backdrop-filter: blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-    border: 1px solid rgba(139, 92, 246, 0.2) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(139, 92, 246, 0.15) !important;
+    border: 1px solid rgba(220, 38, 38, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(220, 38, 38, 0.15) !important;
     color: #ffffff !important;
     position: relative !important;
     z-index: 1 !important;
@@ -495,30 +533,30 @@
     background: rgba(71, 85, 105, 0.7) !important;
     backdrop-filter: blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-    border: 1px solid rgba(139, 92, 246, 0.25) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(139, 92, 246, 0.2) !important;
+    border: 1px solid rgba(220, 38, 38, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(220, 38, 38, 0.2) !important;
     color: #ffffff !important;
     position: relative !important;
     z-index: 1 !important;
   }
 
   .glass-button {
-    background: rgba(139, 92, 246, 0.15) !important;
+    background: rgba(220, 38, 38, 0.15) !important;
     backdrop-filter: blur(16px) saturate(140%) !important;
     -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
-    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    border: 1px solid rgba(220, 38, 38, 0.4) !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(139, 92, 246, 0.2) !important;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(220, 38, 38, 0.2) !important;
     color: #ffffff !important;
     position: relative !important;
     z-index: 1 !important;
   }
 
   .glass-button:hover {
-    background: rgba(139, 92, 246, 0.25) !important;
+    background: rgba(220, 38, 38, 0.25) !important;
     transform: translateY(-3px) !important;
-    box-shadow: 0 12px 35px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(139, 92, 246, 0.3) !important;
-    border: 1px solid rgba(139, 92, 246, 0.6) !important;
+    box-shadow: 0 12px 35px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(220, 38, 38, 0.3) !important;
+    border: 1px solid rgba(220, 38, 38, 0.6) !important;
   }
 
   /* Enhanced LED indicators with higher specificity */
@@ -537,41 +575,6 @@
     color: #8b5cf6 !important;
     background: rgba(139, 92, 246, 0.1) !important;
     border-radius: 8px !important;
-  }
-
-  .led-green {
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    background: #10b981 !important;
-    box-shadow: 0 0 12px #10b981, 0 0 24px #10b981, 0 0 36px #10b981 !important;
-    animation: led-pulse-green 2s ease-in-out infinite !important;
-    display: inline-block !important;
-    flex-shrink: 0 !important;
-  }
-
-  .led-red {
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    background: #ef4444 !important;
-    box-shadow: 0 0 12px #ef4444, 0 0 24px #ef4444, 0 0 36px #ef4444 !important;
-    animation: led-pulse-red 2s ease-in-out infinite !important;
-    animation-delay: 1s !important;
-    display: inline-block !important;
-    flex-shrink: 0 !important;
-  }
-
-  .led-purple {
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    background: #8b5cf6 !important;
-    box-shadow: 0 0 12px #8b5cf6, 0 0 24px #8b5cf6, 0 0 36px #8b5cf6 !important;
-    animation: led-pulse-purple 2s ease-in-out infinite !important;
-    animation-delay: 0.5s !important;
-    display: inline-block !important;
-    flex-shrink: 0 !important;
   }
 
   /* Ensure main content is visible with proper z-index */
