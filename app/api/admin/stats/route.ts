@@ -1,46 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { redisClient, isRedisConfigured } from "@/lib/redis/client"
+import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    if (!isRedisConfigured) {
-      return NextResponse.json({
-        stats: {
-          totalUsers: 0,
-          activeDealers: 0,
-          activeJobs: 0,
-          monthlyRevenue: 0,
-        },
-      })
-    }
+    const supabase = createClient()
 
-    // Check if user is authenticated and is admin
-    const result = await AuthService.getCurrentUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    if (!result || result.user.role !== "admin") {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get basic stats from Redis
-    const userKeys = await redisClient.keys("user:*")
-    const users = []
-
-    for (const key of userKeys) {
-      const userData = await redisClient.get(key)
-      if (userData) {
-        users.push(JSON.parse(userData as string))
-      }
+    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const stats = {
-      totalUsers: users.length,
-      activeDealers: users.filter((u) => u.role === "dealer").length,
-      activeJobs: 0, // TODO: Implement job counting when jobs are migrated to Redis
-      monthlyRevenue: 0, // TODO: Implement revenue tracking when payments are migrated to Redis
-    }
+    const { count: totalUsers = 0 } = await supabase.from("users").select("id", { count: "exact", head: true })
+    const { count: activeDealers = 0 } = await supabase
+      .from("dealers")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active")
 
-    return NextResponse.json({ stats })
+    const { count: activeJobs = 0 } = await supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["open", "accepted", "in_progress"])
+
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+    const { data: paymentsRows } = await supabase
+      .from("payments")
+      .select("amount, created_at")
+      .eq("status", "completed")
+      .gte("created_at", startOfMonth)
+
+    const monthlyRevenue = (paymentsRows || []).reduce((sum, r: any) => sum + Number(r.amount || 0), 0)
+
+    return NextResponse.json({
+      stats: {
+        totalUsers: totalUsers || 0,
+        activeDealers: activeDealers || 0,
+        activeJobs: activeJobs || 0,
+        monthlyRevenue,
+      },
+    })
   } catch (error) {
     console.error("Admin stats API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
