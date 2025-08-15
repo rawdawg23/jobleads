@@ -37,11 +37,11 @@ export default function HomePage() {
     console.log("[v0] HomePage component mounting")
     try {
       const client = createClient()
-      if (client && client.auth) {
+      if (client) {
         setSupabase(client)
         console.log("[v0] Supabase client initialized successfully")
       } else {
-        console.error("[v0] Supabase client missing auth property")
+        console.error("[v0] Failed to create Supabase client")
         setHasError(true)
       }
     } catch (error) {
@@ -51,12 +51,17 @@ export default function HomePage() {
   }, [])
 
   const fetchDynoData = useCallback(async () => {
-    if (!supabase || !supabase.auth) {
+    if (!supabase) {
       console.warn("[v0] Supabase client not ready for dyno data fetch")
       return
     }
 
     try {
+      if (!supabase.auth) {
+        console.warn("[v0] Supabase auth not available, using demo data")
+        throw new Error("Auth not available")
+      }
+
       const { data: sessions, error } = await supabase
         .from("dyno_sessions")
         .select(`
@@ -115,12 +120,17 @@ export default function HomePage() {
   }, [supabase])
 
   const fetchCarMeetData = useCallback(async () => {
-    if (!supabase || !supabase.auth) {
+    if (!supabase) {
       console.warn("[v0] Supabase client not ready for car meet data fetch")
       return
     }
 
     try {
+      if (!supabase.auth) {
+        console.warn("[v0] Supabase auth not available, using demo data")
+        throw new Error("Auth not available")
+      }
+
       const { data: meets, error } = await supabase
         .from("car_meet_locations")
         .select(`
@@ -178,12 +188,17 @@ export default function HomePage() {
   }, [supabase])
 
   const fetchStats = useCallback(async () => {
-    if (!supabase || !supabase.auth) {
+    if (!supabase) {
       console.warn("[v0] Supabase client not ready for stats fetch")
       return
     }
 
     try {
+      if (!supabase.auth) {
+        console.warn("[v0] Supabase auth not available, using demo data")
+        throw new Error("Auth not available")
+      }
+
       const [usersResult, companiesResult, jobsResult] = await Promise.allSettled([
         supabase.from("users").select("id", { count: "exact", head: true }),
         supabase.from("companies").select("id", { count: "exact", head: true }).eq("status", "active"),
@@ -212,7 +227,7 @@ export default function HomePage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!supabase || !supabase.auth || hasError) {
+    if (!supabase || hasError) {
       console.warn("[v0] Skipping data fetch - client not ready or has error")
       return
     }
