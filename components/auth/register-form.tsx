@@ -77,9 +77,9 @@ export function RegisterForm() {
                     <span className="text-sm text-gray-500">Find certified dealers for ECU remapping</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="Dealer - Accept Jobs">
+                <SelectItem value="Dealer - Apply for Jobs">
                   <div className="flex flex-col">
-                    <span className="font-medium">Dealer - Accept Jobs</span>
+                    <span className="font-medium">Dealer - Apply for Jobs</span>
                     <span className="text-sm text-gray-500">Apply for ECU remapping jobs</span>
                   </div>
                 </SelectItem>

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { SessionModel, UserModel } from "@/lib/redis/models"
+import { DealerModel, JobModel } from "@/lib/redis/extended-models"
 
 // Function to calculate distance between two points using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -15,9 +16,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 async function getCoordinatesFromPostcode(postcode: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    // Use real UK postcode API (postcodes.io)
     const normalizedPostcode = postcode.replace(/\s+/g, "").toUpperCase()
-
     const response = await fetch(`https://api.postcodes.io/postcodes/${normalizedPostcode}`)
 
     if (!response.ok) {
@@ -43,99 +42,58 @@ async function getCoordinatesFromPostcode(postcode: string): Promise<{ lat: numb
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const sessionId = request.cookies.get("ctek-session")?.value
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!sessionId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Get dealer profile
-    const { data: dealer, error: dealerError } = await supabase
-      .from("dealers")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .single()
+    const session = await SessionModel.findById(sessionId)
+    if (!session) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+    }
 
-    if (dealerError || !dealer) {
+    const user = await UserModel.findById(session.userId)
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 })
+    }
+
+    const dealer = await DealerModel.findByUserId(user.id)
+    if (!dealer || dealer.status !== "active") {
       return NextResponse.json({ error: "Dealer profile not found or not active" }, { status: 404 })
     }
 
-    // Get dealer coordinates
-    let dealerCoords = { lat: dealer.business_latitude, lng: dealer.business_longitude }
-
-    // If coordinates not stored, get them from real postcode API
-    if (!dealerCoords.lat || !dealerCoords.lng) {
-      const coords = await getCoordinatesFromPostcode(dealer.business_postcode)
-      if (coords) {
-        dealerCoords = coords
-        // Update dealer record with real coordinates
-        await supabase
-          .from("dealers")
-          .update({
-            business_latitude: coords.lat,
-            business_longitude: coords.lng,
-          })
-          .eq("id", dealer.id)
-      }
+    // Get dealer coordinates from postcode
+    const dealerCoords = await getCoordinatesFromPostcode(dealer.businessPostcode)
+    if (!dealerCoords) {
+      return NextResponse.json({ error: "Could not determine dealer location" }, { status: 400 })
     }
 
-    // Get all pending jobs
-    const { data: jobs, error: jobsError } = await supabase
-      .from("jobs")
-      .select(`
-        *,
-        customer:users!jobs_customer_id_fkey (
-          first_name,
-          last_name
-        )
-      `)
-      .eq("status", "pending")
-      .is("dealer_id", null)
-
-    if (jobsError) {
-      console.error("Jobs fetch error:", jobsError)
-      return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 })
-    }
+    const allJobs = await JobModel.findAll()
+    const pendingJobs = allJobs.filter((job) => job.status === "pending" && !job.dealerId)
 
     // Calculate distances and filter jobs within dealer's radius
     const jobsWithDistance = []
 
-    for (const job of jobs || []) {
-      // Get job coordinates
-      let jobCoords = { lat: job.customer_latitude, lng: job.customer_longitude }
+    for (const job of pendingJobs) {
+      const jobCoords = await getCoordinatesFromPostcode(job.customerPostcode)
 
-      // If coordinates not stored, get them from real postcode API
-      if (!jobCoords.lat || !jobCoords.lng) {
-        const coords = await getCoordinatesFromPostcode(job.customer_postcode)
-        if (coords) {
-          jobCoords = coords
-          // Update job record with real coordinates
-          await supabase
-            .from("jobs")
-            .update({
-              customer_latitude: coords.lat,
-              customer_longitude: coords.lng,
-            })
-            .eq("id", job.id)
-        }
-      }
-
-      // Calculate distance using real coordinates
-      if (dealerCoords.lat && dealerCoords.lng && jobCoords.lat && jobCoords.lng) {
+      if (jobCoords) {
         const distance = calculateDistance(dealerCoords.lat, dealerCoords.lng, jobCoords.lat, jobCoords.lng)
 
         // Only include jobs within dealer's service radius
-        if (distance <= dealer.radius_miles) {
+        if (distance <= dealer.radiusMiles) {
+          // Get customer info
+          const customer = await UserModel.findById(job.customerId)
           jobsWithDistance.push({
             ...job,
             distance_miles: distance,
+            customer: customer
+              ? {
+                  first_name: customer.firstName,
+                  last_name: customer.lastName,
+                }
+              : null,
           })
         }
       }
@@ -143,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       jobs: jobsWithDistance,
-      dealerLocation: dealer.business_postcode,
+      dealerLocation: dealer.businessPostcode,
       success: true,
     })
   } catch (error) {

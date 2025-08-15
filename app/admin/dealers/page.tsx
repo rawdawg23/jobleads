@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Wrench, CheckCircle, X, ArrowLeft, Calendar, MapPin, Phone, Award } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
 
 interface Dealer {
   id: string
@@ -58,22 +57,16 @@ export default function AdminDealersPage() {
 
   const fetchDealers = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("dealers")
-        .select(`
-          *,
-          user:users(
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
-        .order("created_at", { ascending: false })
+      const response = await fetch("/api/admin/dealers", {
+        credentials: "include",
+      })
 
-      if (error) throw error
-      setDealers(data || [])
+      if (!response.ok) {
+        throw new Error("Failed to fetch dealers")
+      }
+
+      const data = await response.json()
+      setDealers(data.dealers || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch dealers")
     } finally {
@@ -84,16 +77,22 @@ export default function AdminDealersPage() {
   const updateDealerStatus = async (dealerId: string, status: string) => {
     setUpdating(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("dealers")
-        .update({
+      const response = await fetch("/api/admin/dealers", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          dealerId,
           status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", dealerId)
+          adminNotes,
+        }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error("Failed to update dealer status")
+      }
 
       await fetchDealers()
       setSelectedDealer(null)

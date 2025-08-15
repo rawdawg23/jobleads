@@ -20,7 +20,6 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
 
 interface Analytics {
   totalUsers: number
@@ -61,80 +60,16 @@ export default function AdminAnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const supabase = createClient()
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-      // Fetch all data in parallel
-      const [
-        usersResult,
-        customersResult,
-        dealersResult,
-        jobsResult,
-        activeJobsResult,
-        completedJobsResult,
-        paymentsResult,
-        monthlyPaymentsResult,
-        monthlyUsersResult,
-        monthlyJobsResult,
-        postcodesResult,
-      ] = await Promise.all([
-        supabase.from("users").select("id"),
-        supabase.from("users").select("id").eq("role", "customer"),
-        supabase.from("users").select("id").eq("role", "dealer"),
-        supabase.from("jobs").select("id, customer_price"),
-        supabase.from("jobs").select("id").in("status", ["open", "accepted", "in_progress"]),
-        supabase.from("jobs").select("id, customer_price").eq("status", "completed"),
-        supabase.from("payments").select("amount").eq("status", "completed"),
-        supabase
-          .from("payments")
-          .select("amount")
-          .eq("status", "completed")
-          .gte("created_at", startOfMonth.toISOString()),
-        supabase.from("users").select("id").gte("created_at", startOfMonth.toISOString()),
-        supabase.from("jobs").select("id").gte("created_at", startOfMonth.toISOString()),
-        supabase.from("jobs").select("customer_postcode").not("customer_postcode", "is", null),
-      ])
-
-      // Process postcode data
-      const postcodeCounts: { [key: string]: number } = {}
-      postcodesResult.data?.forEach((job) => {
-        if (job.customer_postcode) {
-          const area = job.customer_postcode.split(" ")[0] // Get postcode area (e.g., "SW1" from "SW1A 1AA")
-          postcodeCounts[area] = (postcodeCounts[area] || 0) + 1
-        }
+      const response = await fetch("/api/admin/analytics", {
+        credentials: "include",
       })
 
-      const topPostcodes = Object.entries(postcodeCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10)
-        .map(([postcode, count]) => ({ postcode, count }))
+      if (!response.ok) {
+        throw new Error("Failed to fetch analytics")
+      }
 
-      const totalRevenue = (paymentsResult.data?.reduce((sum, p) => sum + p.amount, 0) || 0) / 100
-      const monthlyRevenue = (monthlyPaymentsResult.data?.reduce((sum, p) => sum + p.amount, 0) || 0) / 100
-      const completedJobsData = completedJobsResult.data || []
-      const averageJobValue =
-        completedJobsData.length > 0
-          ? completedJobsData.reduce((sum, job) => sum + (job.customer_price || 0), 0) / completedJobsData.length
-          : 0
-
-      setAnalytics({
-        totalUsers: usersResult.data?.length || 0,
-        totalCustomers: customersResult.data?.length || 0,
-        totalDealers: dealersResult.data?.length || 0,
-        totalJobs: jobsResult.data?.length || 0,
-        activeJobs: activeJobsResult.data?.length || 0,
-        completedJobs: completedJobsResult.data?.length || 0,
-        totalRevenue,
-        monthlyRevenue,
-        averageJobValue,
-        topPostcodes,
-        recentGrowth: {
-          usersThisMonth: monthlyUsersResult.data?.length || 0,
-          jobsThisMonth: monthlyJobsResult.data?.length || 0,
-          revenueThisMonth: monthlyRevenue,
-        },
-      })
+      const data = await response.json()
+      setAnalytics(data.analytics)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch analytics")
     } finally {

@@ -1,20 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionId = request.cookies.get("ctek-session")?.value
+    const supabase = createClient()
 
-    if (sessionId) {
-      await AuthService.signOut(sessionId)
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
-    const response = NextResponse.json({ success: true })
-
-    // Clear session cookie
-    response.cookies.delete("ctek-session")
-
-    return response
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Sign out API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

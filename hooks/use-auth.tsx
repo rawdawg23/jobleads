@@ -3,6 +3,8 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 interface User {
   id: string
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
     setMounted(true)
@@ -52,16 +55,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (session?.user) {
+          await loadUserProfile(session.user)
+        }
+
+        // Listen for auth changes
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === "SIGNED_IN" && session?.user) {
+            await loadUserProfile(session.user)
+          } else if (event === "SIGNED_OUT") {
+            setUser(null)
+          }
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          if (data.user) {
-            setUser(data.user)
-          }
-        }
+        return () => subscription.unsubscribe()
       } catch (error) {
         console.warn("Auth initialization error:", error)
       } finally {
@@ -70,26 +83,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initializeAuth()
-  }, [mounted])
+  }, [mounted, supabase.auth])
+
+  const loadUserProfile = async (authUser: SupabaseUser) => {
+    try {
+      // Get user profile from users table
+      const { data: profile } = await supabase.from("users").select("*").eq("id", authUser.id).single()
+
+      const userData: User = {
+        id: authUser.id,
+        email: authUser.email || "",
+        firstName: profile?.first_name || "",
+        lastName: profile?.last_name || "",
+        phoneNumber: profile?.phone_number || "",
+        role: profile?.role || "customer",
+        createdAt: authUser.created_at,
+        updatedAt: profile?.updated_at || authUser.updated_at || authUser.created_at,
+      }
+
+      setUser(userData)
+    } catch (error) {
+      console.error("Error loading user profile:", error)
+    }
+  }
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { error: data.error || "Sign in failed" }
+      if (error) {
+        return { error: error.message }
       }
 
-      setUser(data.user)
       return {}
     } catch (error) {
       return { error: "An unexpected error occurred. Please try again." }
@@ -107,26 +135,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   ) => {
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            phone_number: userData.phoneNumber,
+            role: userData.role,
+          },
         },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          password,
-          ...userData,
-        }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { error: data.error || "Sign up failed" }
+      if (error) {
+        return { error: error.message }
       }
 
-      setUser(data.user)
+      // If user is created, also create profile in users table
+      if (data.user) {
+        const { error: profileError } = await supabase.from("users").insert({
+          id: data.user.id,
+          email,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+        })
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError)
+        }
+      }
+
       return {}
     } catch (error) {
       return { error: "An unexpected error occurred during registration." }
@@ -135,11 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        credentials: "include",
-      })
-
+      await supabase.auth.signOut()
       setUser(null)
       router.push("/")
     } catch (error) {
