@@ -5,348 +5,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase"
 
 export default function HomePage() {
-  const [supabase, setSupabase] = useState<any>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
-
-  const [dynoData, setDynoData] = useState({
-    power: 0,
-    torque: 0,
-    rpm: 0,
-    temp: 0,
+  const [dynoData] = useState({
+    power: 245,
+    torque: 380,
+    rpm: 3500,
+    temp: 89,
     isLive: false,
   })
 
-  const [nearestMeet, setNearestMeet] = useState({
-    location: "Loading...",
-    distance: "...",
-    attendees: 0,
-    time: "...",
+  const [nearestMeet] = useState({
+    location: "Birmingham Car Park",
+    distance: "2.3 miles",
+    attendees: 12,
+    time: "Tonight 7:00 PM",
     id: null,
     status: "active",
-    lastUpdated: null,
+    lastUpdated: new Date(),
     isLiveUpdating: false,
   })
 
   const [diagnosticProgress, setDiagnosticProgress] = useState(0)
   const [isScanning, setIsScanning] = useState(false)
-  const [stats, setStats] = useState({
-    totalJobs: 0,
-    activeDealers: 0,
-    completedRemaps: 0,
+  const [stats] = useState({
+    totalJobs: 47,
+    activeDealers: 23,
+    completedRemaps: 156,
   })
-
-  useEffect(() => {
-    try {
-      const client = createClient()
-      setSupabase(client)
-      setIsInitialized(true)
-      console.log("[v0] HomePage component mounted and Supabase client initialized")
-    } catch (error) {
-      console.error("[v0] Failed to initialize Supabase client:", error)
-      setIsInitialized(true) // Still allow component to render with demo data
-    }
-  }, [])
-
-  const fetchLiveDynoData = async () => {
-    if (!supabase) {
-      setDynoData({
-        power: Math.floor(Math.random() * 50) + 220,
-        torque: Math.floor(Math.random() * 80) + 340,
-        rpm: Math.floor(Math.random() * 2000) + 2500,
-        temp: Math.floor(Math.random() * 20) + 80,
-        isLive: false,
-      })
-      return
-    }
-
-    try {
-      const { data: sessions, error } = await supabase
-        .from("dyno_sessions")
-        .select(`
-          *,
-          sensor_readings!inner (
-            power_hp,
-            torque_nm,
-            rpm,
-            ecu_temp,
-            timestamp
-          )
-        `)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1)
-
-      if (error) throw error
-
-      if (sessions && sessions.length > 0) {
-        const session = sessions[0]
-        const latestReading = session.sensor_readings.sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-        )[0]
-
-        if (latestReading) {
-          setDynoData({
-            power: Math.round(latestReading.power_hp || 245),
-            torque: Math.round(latestReading.torque_nm || 380),
-            rpm: latestReading.rpm || 3500,
-            temp: Math.round(latestReading.ecu_temp || 89),
-            isLive: true,
-          })
-        }
-      } else {
-        setDynoData({
-          power: Math.floor(Math.random() * 50) + 220,
-          torque: Math.floor(Math.random() * 80) + 340,
-          rpm: Math.floor(Math.random() * 2000) + 2500,
-          temp: Math.floor(Math.random() * 20) + 80,
-          isLive: false,
-        })
-      }
-    } catch (error) {
-      console.error("Error fetching dyno data:", error)
-      setDynoData({
-        power: Math.floor(Math.random() * 50) + 220,
-        torque: Math.floor(Math.random() * 80) + 340,
-        rpm: Math.floor(Math.random() * 2000) + 2500,
-        temp: Math.floor(Math.random() * 20) + 80,
-        isLive: false,
-      })
-    }
-  }
-
-  const fetchNearestCarMeet = async () => {
-    if (!supabase) {
-      setNearestMeet({
-        location: "Birmingham Car Park",
-        distance: "2.3 miles",
-        attendees: 12,
-        time: "Tonight 7:00 PM",
-        id: null,
-        status: "active",
-        lastUpdated: new Date(),
-        isLiveUpdating: false,
-      })
-      return
-    }
-
-    try {
-      const { data: meets, error } = await supabase
-        .from("car_meet_locations")
-        .select(`
-          *,
-          car_meet_attendees!inner (
-            id,
-            user_id,
-            payment_status,
-            joined_at
-          )
-        `)
-        .eq("status", "active")
-        .gte("event_date", new Date().toISOString())
-        .order("event_date", { ascending: true })
-        .limit(1)
-
-      if (error) throw error
-
-      if (meets && meets.length > 0) {
-        const meet = meets[0]
-        const eventDate = new Date(meet.event_date)
-        const now = new Date()
-        const isToday = eventDate.toDateString() === now.toDateString()
-
-        const activeAttendees =
-          meet.car_meet_attendees?.filter(
-            (attendee) => attendee.payment_status === "paid" || attendee.payment_status === "confirmed",
-          ).length || 0
-
-        setNearestMeet({
-          location: meet.location_name || "Birmingham Car Park",
-          distance: "2.3 miles",
-          attendees: activeAttendees,
-          time: isToday
-            ? `Tonight ${eventDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
-            : eventDate.toLocaleDateString("en-GB"),
-          id: meet.id,
-          status: meet.status,
-          lastUpdated: new Date(),
-          isLiveUpdating: true,
-        })
-      } else {
-        setNearestMeet({
-          location: "Birmingham Car Park",
-          distance: "2.3 miles",
-          attendees: 12,
-          time: "Tonight 7:00 PM",
-          id: null,
-          status: "active",
-          lastUpdated: new Date(),
-          isLiveUpdating: false,
-        })
-      }
-    } catch (error) {
-      console.error("Error fetching car meet data:", error)
-      setNearestMeet({
-        location: "Birmingham Car Park",
-        distance: "2.3 miles",
-        attendees: 12,
-        time: "Tonight 7:00 PM",
-        id: null,
-        status: "active",
-        lastUpdated: new Date(),
-        isLiveUpdating: false,
-      })
-    }
-  }
-
-  const fetchStats = async () => {
-    if (!supabase) {
-      setStats({
-        totalJobs: 47,
-        activeDealers: 23,
-        completedRemaps: 156,
-      })
-      return
-    }
-
-    try {
-      let totalJobs = 0
-      let activeDealers = 0
-      let completedRemaps = 0
-
-      try {
-        const jobsResult = await supabase.from("jobs").select("id", { count: "exact" }).eq("status", "active")
-        totalJobs = jobsResult.count || 0
-      } catch (error) {
-        console.error("Error fetching jobs count:", error)
-      }
-
-      try {
-        const dealersResult = await supabase.from("users").select("id", { count: "exact" }).eq("role", "dealer")
-        activeDealers = dealersResult.count || 0
-      } catch (error) {
-        console.error("Error fetching dealers count:", error)
-      }
-
-      try {
-        const remapsResult = await supabase
-          .from("dyno_sessions")
-          .select("id", { count: "exact" })
-          .eq("status", "completed")
-        completedRemaps = remapsResult.count || 0
-      } catch (error) {
-        console.error("Error fetching remaps count:", error)
-      }
-
-      setStats({
-        totalJobs,
-        activeDealers,
-        completedRemaps,
-      })
-    } catch (error) {
-      console.error("Error fetching stats:", error)
-      setStats({
-        totalJobs: 47,
-        activeDealers: 23,
-        completedRemaps: 156,
-      })
-    }
-  }
-
-  useEffect(() => {
-    if (!isInitialized) return
-
-    const initializeData = async () => {
-      try {
-        await Promise.allSettled([fetchLiveDynoData(), fetchNearestCarMeet(), fetchStats()])
-      } catch (error) {
-        console.error("[v0] Error during initial data fetch:", error)
-      }
-    }
-
-    initializeData()
-
-    if (!supabase) return
-
-    try {
-      const dynoChannel = supabase
-        .channel("dyno-updates")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "dyno_sessions",
-          },
-          () => {
-            fetchLiveDynoData().catch((error) => console.error("Error in dyno subscription:", error))
-          },
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "sensor_readings",
-          },
-          () => {
-            fetchLiveDynoData().catch((error) => console.error("Error in sensor subscription:", error))
-          },
-        )
-        .subscribe()
-
-      const meetChannel = supabase
-        .channel("meet-updates")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "car_meet_locations",
-          },
-          () => {
-            fetchNearestCarMeet().catch((error) => console.error("Error in meet subscription:", error))
-          },
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "car_meet_attendees",
-          },
-          () => {
-            fetchNearestCarMeet().catch((error) => console.error("Error in attendee subscription:", error))
-          },
-        )
-        .subscribe()
-
-      const dynoInterval = setInterval(() => {
-        fetchLiveDynoData().catch((error) => console.error("Error in dyno interval:", error))
-      }, 60000) // Every minute instead of 30 seconds
-
-      const statsInterval = setInterval(() => {
-        fetchStats().catch((error) => console.error("Error in stats interval:", error))
-      }, 600000) // Every 10 minutes instead of 5 minutes
-
-      return () => {
-        try {
-          if (supabase) {
-            supabase.removeChannel(dynoChannel)
-            supabase.removeChannel(meetChannel)
-          }
-          clearInterval(dynoInterval)
-          clearInterval(statsInterval)
-        } catch (error) {
-          console.error("[v0] Error during cleanup:", error)
-        }
-      }
-    } catch (error) {
-      console.error("[v0] Error setting up subscriptions:", error)
-    }
-  }, [isInitialized, supabase])
 
   useEffect(() => {
     let diagnosticInterval: NodeJS.Timeout
@@ -374,6 +60,8 @@ export default function HomePage() {
     setIsScanning(true)
     setDiagnosticProgress(0)
   }
+
+  console.log("[v0] Minimal HomePage component rendered successfully")
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
