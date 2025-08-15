@@ -17,6 +17,7 @@ interface Stats {
 }
 
 export default function AdminDashboardPage() {
+  const [mounted, setMounted] = useState(false)
   const { user, loading, isAdmin } = useAuth()
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
@@ -28,6 +29,12 @@ export default function AdminDashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
     if (!loading && (!user || !isAdmin)) {
       router.push("/auth/login")
       return
@@ -36,7 +43,7 @@ export default function AdminDashboardPage() {
     if (user && isAdmin) {
       loadStats()
     }
-  }, [user, loading, isAdmin, router])
+  }, [user, loading, isAdmin, router, mounted])
 
   const loadStats = async () => {
     try {
@@ -55,7 +62,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (loading || loadingStats) {
+  if (!mounted || loading || loadingStats) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
