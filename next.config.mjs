@@ -41,6 +41,16 @@ const nextConfig = {
         },
       }
     }
+    
+    // Handle Node.js polyfills for Edge Runtime compatibility
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+      crypto: false,
+    }
+    
     return config
   },
   serverExternalPackages: [
@@ -52,6 +62,14 @@ const nextConfig = {
     '@supabase/functions-js',
     '@supabase/gotrue-js'
   ],
+  experimental: {
+    ...nextConfig.experimental,
+    serverComponentsExternalPackages: [
+      '@supabase/supabase-js',
+      '@supabase/realtime-js',
+      '@supabase/ssr'
+    ],
+  },
 }
 
 export default nextConfig
