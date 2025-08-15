@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,36 +25,47 @@ export function RegisterForm() {
     setSuccess(null)
 
     const formData = new FormData(e.currentTarget)
-    const data = {
-      accountType: formData.get("accountType") as string,
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      password: formData.get("password") as string,
-    }
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+    const phone = formData.get("phone") as string
+    const accountType = formData.get("accountType") as string
 
     try {
-      const response = await fetch("/api/auth/register", {
+      console.log("[v0] Starting registration for:", email)
+
+      const response = await fetch("/api/auth/register-working", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phone,
+          role: accountType === "Customer - Post Jobs" ? "customer" : "dealer",
+        }),
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        setError(result.error || "Registration failed")
-      } else {
-        setSuccess("Account created successfully! Please sign in.")
-        setTimeout(() => {
-          router.push("/auth/login")
-        }, 2000)
+        console.error("[v0] Registration failed:", result)
+        setError(result.details || result.error || "Registration failed")
+        return
       }
+
+      console.log("[v0] User created successfully:", result.user.email)
+      setSuccess("Account created successfully! You can now sign in with your credentials.")
+      setTimeout(() => {
+        router.push("/auth/login")
+      }, 3000)
     } catch (error) {
-      setError("An error occurred during registration")
+      console.error("[v0] Registration exception:", error)
+      setError(error instanceof Error ? error.message : "An error occurred during registration. Please try again.")
     } finally {
       setIsLoading(false)
     }

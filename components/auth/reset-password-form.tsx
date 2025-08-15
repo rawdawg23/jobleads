@@ -40,19 +40,18 @@ function SubmitButton() {
 export function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get("token")
+  const token = searchParams.get("token") || searchParams.get("access_token")
   const [state, formAction] = useActionState(resetPassword, null)
 
   useEffect(() => {
     if (state?.success) {
-      // Redirect to login after successful password reset
       setTimeout(() => {
-        router.push("/auth/login")
-      }, 3000)
+        router.push("/auth/login?message=password-reset-success")
+      }, 2000)
     }
   }, [state, router])
 
-  if (!token) {
+  if (!token && !searchParams.get("type")) {
     return (
       <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20 hover:shadow-3xl transition-all duration-500">
         <CardHeader className="text-center pb-6">
@@ -91,7 +90,7 @@ export function ResetPasswordForm() {
         <CardContent className="space-y-6">
           <Alert className="border-green-200/50 bg-green-50/80 backdrop-blur-sm">
             <AlertDescription className="text-green-800">
-              You can now sign in with your new password. Redirecting to login...
+              You can now sign in with your new password. Redirecting to sign in page...
             </AlertDescription>
           </Alert>
 
@@ -113,8 +112,6 @@ export function ResetPasswordForm() {
       </CardHeader>
       <CardContent className="space-y-6">
         <form action={formAction} className="space-y-6">
-          <input type="hidden" name="token" value={token} />
-
           {state?.error && (
             <Alert variant="destructive" className="border-red-200/50 bg-red-50/80 backdrop-blur-sm">
               <AlertDescription className="text-red-800">{state.error}</AlertDescription>

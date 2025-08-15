@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { X, AlertTriangle, Info, CheckCircle, XCircle } from "lucide-react"
-import { useAuth } from "@/lib/simple-auth"
+import { supabase } from "@/lib/supabase/client"
 
 interface SiteMessage {
   id: string
@@ -15,14 +15,44 @@ interface SiteMessage {
 }
 
 export default function SiteMessageBanner() {
-  const { user, loading } = useAuth()
-  const isCustomer = user?.account_type === "customer"
-  const isDealer = user?.account_type === "dealer"
-
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [messages, setMessages] = useState<SiteMessage[]>([])
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set())
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
+        setUser({ ...user, role: userData?.role })
+      }
+      setLoading(false)
+    }
+
+    getUser()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+        setUser({ ...session.user, role: userData?.role })
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const isCustomer = user?.role === "customer"
+  const isDealer = user?.role === "dealer"
 
   useEffect(() => {
     if (!loading && user) {
@@ -51,19 +81,23 @@ export default function SiteMessageBanner() {
 
   const fetchActiveMessages = async () => {
     try {
-      const response = await fetch("/api/site-messages", {
-        credentials: "include",
-      })
+      const mockMessages: SiteMessage[] = [
+        {
+          id: "1",
+          title: "Welcome to CTEK JOB LEADS",
+          content: "Connect with certified ECU specialists and grow your business.",
+          type: "info",
+          dismissible: true,
+          targetAudience: "all",
+        },
+      ]
 
-      if (response.ok) {
-        const data = await response.json()
-        const filteredMessages = data.messages.filter((msg: SiteMessage) => {
-          if (msg.targetAudience === "customers" && !isCustomer) return false
-          if (msg.targetAudience === "dealers" && !isDealer) return false
-          return !dismissedMessages.has(msg.id)
-        })
-        setMessages(filteredMessages)
-      }
+      const filteredMessages = mockMessages.filter((msg: SiteMessage) => {
+        if (msg.targetAudience === "customers" && !isCustomer) return false
+        if (msg.targetAudience === "dealers" && !isDealer) return false
+        return !dismissedMessages.has(msg.id)
+      })
+      setMessages(filteredMessages)
     } catch (error) {
       console.error("Failed to fetch site messages:", error)
     }

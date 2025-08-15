@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useAuth } from "@/lib/simple-auth"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +14,6 @@ import { useRouter } from "next/navigation"
 
 export function LoginForm() {
   const router = useRouter()
-  const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,12 +27,16 @@ export function LoginForm() {
     const password = formData.get("password") as string
 
     try {
-      const result = await login(email, password)
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (!result.success) {
-        setError(result.error || "Invalid email or password")
-      } else {
+      if (authError) {
+        setError(authError.message)
+      } else if (data.user) {
         router.push("/profile")
+        router.refresh()
       }
     } catch (error) {
       setError("An error occurred during sign in")

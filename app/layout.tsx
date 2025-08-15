@@ -2,9 +2,10 @@ import type React from "react"
 import type { Metadata } from "next"
 import { DM_Sans, DM_Serif_Display } from "next/font/google"
 import "./globals.css"
-import { AuthProvider } from "@/lib/simple-auth"
 import SiteMessageBanner from "@/components/site-message-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { AuthProvider } from "@/hooks/use-auth"
+import { SimpleRedirectHandler } from "@/components/simple-redirect-handler"
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -46,15 +47,6 @@ export const metadata: Metadata = {
   },
 }
 
-function ClientProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <SiteMessageBanner />
-      {children}
-    </AuthProvider>
-  )
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -64,7 +56,11 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} ${dmSerifDisplay.variable} antialiased`}>
       <body className="font-sans">
         <ErrorBoundary>
-          <ClientProviders>{children}</ClientProviders>
+          <AuthProvider>
+            <SiteMessageBanner />
+            <SimpleRedirectHandler />
+            {children}
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>
