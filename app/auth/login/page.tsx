@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 import { LoginForm } from "@/components/auth/login-form"
 
 export default function LoginPage() {
