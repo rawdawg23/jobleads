@@ -80,10 +80,18 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="password" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Password
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Password
+              </Label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200"
+              >
+                Forgot Password?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"

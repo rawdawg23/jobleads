@@ -1,8 +1,12 @@
 "use server"
 
 import { AuthService } from "@/lib/redis/auth"
+import { UserModel, PasswordResetModel } from "@/lib/redis/models"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
@@ -135,4 +139,103 @@ export async function signOut() {
   }
 
   redirect("/auth/login")
+}
+
+export async function requestPasswordReset(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const email = formData.get("email")
+
+  if (!email) {
+    return { error: "Email is required" }
+  }
+
+  try {
+    // Find user by email
+    const user = await UserModel.findByEmail(email.toString())
+
+    // Always return success to prevent email enumeration attacks
+    // But only send email if user exists
+    if (user) {
+      // Create password reset token
+      const resetToken = await PasswordResetModel.create(user.id, user.email, 1) // 1 hour expiry
+
+      // Create reset URL
+      const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${resetToken.id}`
+
+      // Send password reset email
+      await resend.emails.send({
+        from: "CTEK Job Leads <noreply@ctekjobleads.com>",
+        to: [user.email],
+        subject: "Reset Your CTEK Job Leads Password",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #7c3aed;">Reset Your Password</h2>
+            <p>Hello ${user.firstName},</p>
+            <p>You requested to reset your password for your CTEK Job Leads account. Click the button below to create a new password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="background-color: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+            </div>
+            <p>This link will expire in 1 hour for security reasons.</p>
+            <p>If you didn't request this password reset, you can safely ignore this email.</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #666; font-size: 14px;">CTEK Job Leads - Professional ECU Remapping Network</p>
+          </div>
+        `,
+      })
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Password reset request error:", error instanceof Error ? error.message : String(error))
+    return { error: "An unexpected error occurred. Please try again." }
+  }
+}
+
+export async function resetPassword(prevState: any, formData: FormData) {
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const token = formData.get("token")
+  const password = formData.get("password")
+  const confirmPassword = formData.get("confirmPassword")
+
+  if (!token || !password || !confirmPassword) {
+    return { error: "All fields are required" }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match" }
+  }
+
+  if (password.toString().length < 8) {
+    return { error: "Password must be at least 8 characters long" }
+  }
+
+  try {
+    // Find and validate reset token
+    const resetToken = await PasswordResetModel.findById(token.toString())
+
+    if (!resetToken) {
+      return { error: "Invalid or expired reset token" }
+    }
+
+    // Update user password
+    const success = await UserModel.updatePassword(resetToken.userId, password.toString())
+
+    if (!success) {
+      return { error: "Failed to update password. Please try again." }
+    }
+
+    // Mark token as used
+    await PasswordResetModel.markAsUsed(resetToken.id)
+
+    return { success: true }
+  } catch (error) {
+    console.error("Password reset error:", error instanceof Error ? error.message : String(error))
+    return { error: "An unexpected error occurred. Please try again." }
+  }
 }
