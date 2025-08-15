@@ -39,7 +39,7 @@ export default function JobsPage() {
   const [locationFilter, setLocationFilter] = useState("")
   const [remoteFilter, setRemoteFilter] = useState("all")
   const { user } = useAuth()
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     fetchJobs()
@@ -64,6 +64,7 @@ export default function JobsPage() {
       setJobs(data || [])
     } catch (error) {
       console.error("Error fetching jobs:", error)
+      setJobs([])
     } finally {
       setLoading(false)
     }
