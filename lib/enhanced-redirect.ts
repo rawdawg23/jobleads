@@ -171,6 +171,9 @@ export class EnhancedRedirectSystem {
 
   // Client-side redirect utilities
   static getClientRedirectUrl(user: any, currentPath: string): string | null {
+    return null
+
+    /* DISABLED - Complex redirect logic causing issues
     const context: RedirectContext = {
       user,
       pathname: currentPath,
@@ -190,6 +193,7 @@ export class EnhancedRedirectSystem {
     }
 
     return null
+    */
   }
 
   // Rule management

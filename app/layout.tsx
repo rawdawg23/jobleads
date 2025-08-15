@@ -5,7 +5,7 @@ import "./globals.css"
 import SiteMessageBanner from "@/components/site-message-banner"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { AuthProvider } from "@/hooks/use-auth"
-import { SimpleRedirectHandler } from "@/components/simple-redirect-handler"
+// import { SimpleRedirectHandler } from "@/components/simple-redirect-handler"
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -58,7 +58,6 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <SiteMessageBanner />
-            <SimpleRedirectHandler />
             {children}
           </AuthProvider>
         </ErrorBoundary>

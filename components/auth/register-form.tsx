@@ -33,8 +33,6 @@ export function RegisterForm() {
     const accountType = formData.get("accountType") as string
 
     try {
-      console.log("[v0] Starting registration for:", email)
-
       const response = await fetch("/api/auth/register-working", {
         method: "POST",
         headers: {
@@ -53,18 +51,15 @@ export function RegisterForm() {
       const result = await response.json()
 
       if (!response.ok) {
-        console.error("[v0] Registration failed:", result)
         setError(result.details || result.error || "Registration failed")
         return
       }
 
-      console.log("[v0] User created successfully:", result.user.email)
       setSuccess("Account created successfully! You can now sign in with your credentials.")
       setTimeout(() => {
         router.push("/auth/login")
       }, 3000)
     } catch (error) {
-      console.error("[v0] Registration exception:", error)
       setError(error instanceof Error ? error.message : "An error occurred during registration. Please try again.")
     } finally {
       setIsLoading(false)

@@ -1,35 +1,15 @@
 "use client"
 
-import dynamic from "next/dynamic"
-import { Suspense, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Users, Car, ArrowRight, Zap, Settings, TrendingUp, Shield, Award, Clock, Menu, X } from "lucide-react"
 import Link from "next/link"
-
-const HeroSection = dynamic(() => import("@/components/sections/hero-section"), {
-  loading: () => <div className="h-96 bg-gradient-to-br from-slate-50 to-white animate-pulse" />,
-})
-
-const ServicesSection = dynamic(() => import("@/components/sections/services-section"), {
-  loading: () => <div className="h-64 bg-white/40 animate-pulse" />,
-})
-
-const FeaturesSection = dynamic(() => import("@/components/sections/features-section"), {
-  loading: () => <div className="h-64 bg-gradient-to-br from-slate-50/50 to-slate-100/50 animate-pulse" />,
-})
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-5 w-48 h-48 md:top-20 md:left-10 md:w-72 md:h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-20 right-10 w-64 h-64 md:top-40 md:right-20 md:w-96 md:h-96 bg-amber-500/15 rounded-full blur-3xl animate-float-delayed"></div>
-        <div className="absolute bottom-10 left-1/2 w-48 h-48 md:bottom-20 md:w-80 md:h-80 bg-yellow-400/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-1/2 left-1/4 w-32 h-32 md:w-64 md:h-64 bg-amber-400/12 rounded-full blur-3xl animate-float-delayed"></div>
-      </div>
-
       <header className="border-b border-white/20 glass-grey sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
@@ -279,18 +259,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <Suspense fallback={<div className="h-96 bg-gradient-to-br from-slate-50 to-white animate-pulse" />}>
-        <HeroSection />
-      </Suspense>
-
-      <Suspense fallback={<div className="h-64 bg-white/40 animate-pulse" />}>
-        <ServicesSection />
-      </Suspense>
-
-      <Suspense fallback={<div className="h-64 bg-gradient-to-br from-slate-50/50 to-slate-100/50 animate-pulse" />}>
-        <FeaturesSection />
-      </Suspense>
 
       <section className="py-16 md:py-24 px-4 md:px-6 glass-card-grey border-y border-white/20 text-white relative">
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 backdrop-blur-md"></div>

@@ -20,6 +20,12 @@ export const isSupabaseConfigured = (() => {
 })()
 
 export async function updateSession(request: NextRequest) {
+  if (request.nextUrl.pathname === "/") {
+    return NextResponse.next({
+      request,
+    })
+  }
+
   // If Supabase is not configured, just continue without auth
   if (!isSupabaseConfigured) {
     return NextResponse.next({
@@ -101,7 +107,6 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/auth/callback"
 
     const isPublicRoute =
-      request.nextUrl.pathname === "/" ||
       request.nextUrl.pathname.startsWith("/dealers") ||
       request.nextUrl.pathname.startsWith("/_next") ||
       request.nextUrl.pathname.startsWith("/admin-direct") ||

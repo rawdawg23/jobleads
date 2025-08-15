@@ -1,14 +1,17 @@
 import type { NextRequest } from "next/server"
-import { updateSession } from "@/lib/supabase/middleware"
+// import { updateSession } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
-  try {
-    return await updateSession(request)
-  } catch (error) {
-    console.error("[Middleware] Error updating session:", error)
-    // Return a simple response to prevent middleware failures
-    return new Response(null, { status: 200 })
-  }
+  // This allows users to access the ECU remapping platform without authentication interference
+  return new Response(null, { status: 200 })
+
+  // try {
+  //   return await updateSession(request)
+  // } catch (error) {
+  //   console.error("[Middleware] Error updating session:", error)
+  //   // Return a simple response to prevent middleware failures
+  //   return new Response(null, { status: 200 })
+  // }
 }
 
 export const config = {

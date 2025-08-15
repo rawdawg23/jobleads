@@ -21,29 +21,22 @@ const globalAuthState = globalThis.__GLOBAL_AUTH_STATE__ || {
 
 function ensureInitialized() {
   if (typeof window === "undefined") {
-    console.log("[v0] Skipping global auth initialization during build/SSR")
     return
   }
 
   if (globalThis.__GLOBAL_AUTH_INITIALIZED__) {
-    console.log("[v0] Global auth already initialized, skipping...")
     return
   }
 
   globalThis.__GLOBAL_AUTH_INITIALIZED__ = true
 
-  console.log("[v0] Initializing global auth system")
-
   if (!globalSupabase) {
     globalSupabase = createClient()
     globalThis.__GLOBAL_SUPABASE_CLIENT__ = globalSupabase
-    console.log("[v0] Global Supabase client created")
   }
 
   if (globalSupabase && !globalAuthSubscription) {
     globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
-      console.log("[v0] Global auth state change:", event)
-
       globalAuthState.session = session
       globalAuthState.user = session?.user ?? null
       globalAuthState.loading = false
@@ -53,7 +46,6 @@ function ensureInitialized() {
       globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
     })
     globalThis.__GLOBAL_AUTH_SUBSCRIPTION__ = globalAuthSubscription
-    console.log("[v0] Global auth subscription created")
   }
 
   globalAuthState.initialized = true
