@@ -19,6 +19,15 @@ const nextConfig = {
         },
       },
     },
+    serverComponentsExternalPackages: [
+      '@supabase/supabase-js',
+      '@supabase/realtime-js',
+      '@supabase/ssr',
+      '@supabase/postgrest-js',
+      '@supabase/storage-js',
+      '@supabase/functions-js',
+      '@supabase/gotrue-js'
+    ],
   },
   compress: true,
   poweredByHeader: false,
@@ -42,13 +51,25 @@ const nextConfig = {
       }
     }
     
-    // Handle Node.js polyfills for Edge Runtime compatibility
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
       crypto: false,
+      process: false,
+      buffer: false,
+      util: false,
+      stream: false,
+      events: false,
+    }
+    
+    if (!isServer) {
+      config.externals = config.externals || []
+      config.externals.push({
+        '@supabase/realtime-js': '@supabase/realtime-js',
+        '@supabase/supabase-js': '@supabase/supabase-js',
+      })
     }
     
     return config

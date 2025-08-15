@@ -23,6 +23,7 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { Suspense } from "react"
 
 interface SiteMessage {
   id: string
@@ -36,7 +37,10 @@ interface SiteMessage {
   targetAudience: "all" | "customers" | "dealers"
 }
 
-export default function AdminMessagesPage() {
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
+function AdminMessagesContent() {
   const { user, loading, isAdmin } = useAuth()
   const router = useRouter()
   const [messages, setMessages] = useState<SiteMessage[]>([])
@@ -407,5 +411,22 @@ export default function AdminMessagesPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminMessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-foreground/70 text-lg">Loading admin panel...</p>
+          </div>
+        </div>
+      }
+    >
+      <AdminMessagesContent />
+    </Suspense>
   )
 }

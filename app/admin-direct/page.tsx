@@ -4,8 +4,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { createClient } from "@/lib/supabase/client"
 
-export default function AdminDirectPage() {
+function AdminDirectContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -193,5 +192,22 @@ export default function AdminDirectPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function AdminDirectPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-white">Loading admin panel...</p>
+          </div>
+        </div>
+      }
+    >
+      <AdminDirectContent />
+    </Suspense>
   )
 }
