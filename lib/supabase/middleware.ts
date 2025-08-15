@@ -115,7 +115,10 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/admin/upgrade") ||
       request.nextUrl.pathname.startsWith("/api/admin/upgrade-user") ||
       request.nextUrl.pathname.startsWith("/api/auth/forgot-password") ||
-      request.nextUrl.pathname.startsWith("/api/auth/reset-password")
+      request.nextUrl.pathname.startsWith("/api/auth/reset-password") ||
+      request.nextUrl.pathname.startsWith("/tools/supabase-domains") ||
+      request.nextUrl.pathname.startsWith("/tools/domain-auto-sync") ||
+      request.nextUrl.pathname.startsWith("/api/domains")
 
     if (!isAuthRoute && !isPublicRoute) {
       const {
