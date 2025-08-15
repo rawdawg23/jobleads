@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { X, AlertTriangle, Info, CheckCircle, XCircle } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/lib/simple-auth"
 
 interface SiteMessage {
   id: string
@@ -16,54 +15,26 @@ interface SiteMessage {
 }
 
 export default function SiteMessageBanner() {
-  const { user, isCustomer, isDealer } = useAuth()
+  const { user, loading } = useAuth()
+  const isCustomer = user?.account_type === "customer"
+  const isDealer = user?.account_type === "dealer"
+
   const [messages, setMessages] = useState<SiteMessage[]>([])
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set())
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       fetchActiveMessages()
-      // Load dismissed messages from localStorage
       const dismissed = localStorage.getItem("dismissedMessages")
       if (dismissed) {
         setDismissedMessages(new Set(JSON.parse(dismissed)))
       }
     }
-  }, [user])
+  }, [user, loading])
 
   useEffect(() => {
-    if (!user) return
-
-    const messageSubscription = supabase
-      .channel("site-messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "site_messages",
-          filter: "is_active=eq.true",
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
-            fetchActiveMessages() // Refresh messages when new ones are added or updated
-          } else if (payload.eventType === "DELETE") {
-            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id))
-          }
-        },
-      )
-      .subscribe()
-
-    return () => {
-      messageSubscription.unsubscribe()
-    }
-  }, [user])
-
-  useEffect(() => {
-    // Auto-rotate messages every 8 seconds
     if (messages.length > 1) {
       const interval = setInterval(() => {
         setCurrentMessageIndex((prev) => (prev + 1) % messages.length)
@@ -73,7 +44,6 @@ export default function SiteMessageBanner() {
   }, [messages.length])
 
   useEffect(() => {
-    // Show banner with animation when messages are available
     if (messages.length > 0) {
       setIsVisible(true)
     }
@@ -88,10 +58,8 @@ export default function SiteMessageBanner() {
       if (response.ok) {
         const data = await response.json()
         const filteredMessages = data.messages.filter((msg: SiteMessage) => {
-          // Filter by target audience
           if (msg.targetAudience === "customers" && !isCustomer) return false
           if (msg.targetAudience === "dealers" && !isDealer) return false
-          // Don't show dismissed messages
           return !dismissedMessages.has(msg.id)
         })
         setMessages(filteredMessages)
@@ -107,16 +75,13 @@ export default function SiteMessageBanner() {
     setDismissedMessages(newDismissed)
     localStorage.setItem("dismissedMessages", JSON.stringify(Array.from(newDismissed)))
 
-    // Remove from current messages
     const updatedMessages = messages.filter((msg) => msg.id !== messageId)
     setMessages(updatedMessages)
 
-    // Adjust current index if needed
     if (currentMessageIndex >= updatedMessages.length) {
       setCurrentMessageIndex(0)
     }
 
-    // Hide banner if no messages left
     if (updatedMessages.length === 0) {
       setIsVisible(false)
     }
@@ -148,7 +113,7 @@ export default function SiteMessageBanner() {
     }
   }
 
-  if (!user || messages.length === 0 || !isVisible) {
+  if (loading || !user || messages.length === 0 || !isVisible) {
     return null
   }
 
@@ -205,7 +170,6 @@ export default function SiteMessageBanner() {
           </div>
         </div>
 
-        {/* Animated progress bar for message rotation */}
         {messages.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
             <div
@@ -218,43 +182,6 @@ export default function SiteMessageBanner() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes progress-bar {
-          0% { width: 0%; }
-          100% { width: 100%; }
-        }
-        
-        @keyframes slide-down {
-          0% {
-            transform: translateY(-100%);
-            opacity: 0;
-          }
-          100% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes pulse-soft {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.8;
-            transform: scale(1.05);
-          }
-        }
-        
-        .animate-slide-down {
-          animation: slide-down 0.5s ease-out;
-        }
-        
-        .animate-pulse-soft {
-          animation: pulse-soft 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }

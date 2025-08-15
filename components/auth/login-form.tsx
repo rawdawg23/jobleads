@@ -1,7 +1,9 @@
 "use client"
 
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
+import type React from "react"
+
+import { useState } from "react"
+import { useAuth } from "@/lib/simple-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,43 +12,36 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, LogIn } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { signIn } from "@/lib/actions"
-
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button
-      type="submit"
-      disabled={pending}
-      className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Signing you in...
-        </>
-      ) : (
-        <>
-          <LogIn className="mr-2 h-5 w-5" />
-          Sign In
-        </>
-      )}
-    </Button>
-  )
-}
 
 export function LoginForm() {
   const router = useRouter()
-  const [state, formAction] = useActionState(signIn, null)
+  const { login } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Handle successful login by redirecting
-  useEffect(() => {
-    if (state?.success) {
-      router.push("/dashboard")
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+
+    try {
+      const result = await login(email, password)
+
+      if (!result.success) {
+        setError(result.error || "Invalid email or password")
+      } else {
+        router.push("/profile")
+      }
+    } catch (error) {
+      setError("An error occurred during sign in")
+    } finally {
+      setIsLoading(false)
     }
-  }, [state, router])
+  }
 
   return (
     <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20 hover:shadow-3xl transition-all duration-500">
@@ -57,10 +52,10 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form action={formAction} className="space-y-6">
-          {state?.error && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
             <Alert variant="destructive" className="border-red-200/50 bg-red-50/80 backdrop-blur-sm">
-              <AlertDescription className="text-red-800">{state.error}</AlertDescription>
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
             </Alert>
           )}
 
@@ -102,7 +97,23 @@ export function LoginForm() {
             />
           </div>
 
-          <SubmitButton />
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Signing you in...
+              </>
+            ) : (
+              <>
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign In
+              </>
+            )}
+          </Button>
         </form>
 
         <div className="text-center pt-4 border-t border-white/20">

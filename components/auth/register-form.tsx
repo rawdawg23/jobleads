@@ -1,7 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
-import { useFormStatus } from "react-dom"
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,34 +11,55 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, User, Mail, Phone, Lock, UserCheck } from "lucide-react"
 import Link from "next/link"
-import { signUp } from "@/lib/actions"
-
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button
-      type="submit"
-      disabled={pending}
-      className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Creating your account...
-        </>
-      ) : (
-        <>
-          <UserCheck className="mr-2 h-5 w-5" />
-          Create Account
-        </>
-      )}
-    </Button>
-  )
-}
+import { useRouter } from "next/navigation"
 
 export function RegisterForm() {
-  const [state, formAction] = useActionState(signUp, null)
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    const formData = new FormData(e.currentTarget)
+    const data = {
+      accountType: formData.get("accountType") as string,
+      firstName: formData.get("firstName") as string,
+      lastName: formData.get("lastName") as string,
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+      password: formData.get("password") as string,
+    }
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setError(result.error || "Registration failed")
+      } else {
+        setSuccess("Account created successfully! Please sign in.")
+        setTimeout(() => {
+          router.push("/auth/login")
+        }, 2000)
+      }
+    } catch (error) {
+      setError("An error occurred during registration")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20 hover:shadow-3xl transition-all duration-500">
@@ -48,16 +70,16 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form action={formAction} className="space-y-6">
-          {state?.error && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
             <Alert variant="destructive" className="border-red-200/50 bg-red-50/80 backdrop-blur-sm">
-              <AlertDescription className="text-red-800">{state.error}</AlertDescription>
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
             </Alert>
           )}
 
-          {state?.success && (
+          {success && (
             <Alert className="border-green-200/50 bg-green-50/80 backdrop-blur-sm">
-              <AlertDescription className="text-green-800">{state.success}</AlertDescription>
+              <AlertDescription className="text-green-800">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -158,7 +180,23 @@ export function RegisterForm() {
             />
           </div>
 
-          <SubmitButton />
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Creating your account...
+              </>
+            ) : (
+              <>
+                <UserCheck className="mr-2 h-5 w-5" />
+                Create Account
+              </>
+            )}
+          </Button>
         </form>
 
         <div className="text-center pt-4 border-t border-white/20">

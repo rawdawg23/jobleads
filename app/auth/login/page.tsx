@@ -1,24 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/auth/login-form"
 
-export default async function LoginPage() {
-  const supabase = createClient()
-
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    // If user is logged in, redirect to dashboard
-    if (session) {
-      redirect("/dashboard")
-    }
-  } catch (error) {
-    // Continue to show login form even if session check fails
-    console.log("Session check failed, continuing to login")
-  }
-
+export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
