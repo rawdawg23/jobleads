@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 
+export const runtime = "nodejs"
+
 const ForgotPasswordForm = dynamic(
   () => import("@/components/auth/forgot-password-form").then((mod) => ({ default: mod.ForgotPasswordForm })),
   {
