@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { SessionModel, UserModel } from "@/lib/redis/models"
-import { DealerModel, JobModel } from "@/lib/redis/extended-models"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
 // Function to calculate distance between two points using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -40,40 +40,55 @@ async function getCoordinatesFromPostcode(postcode: string): Promise<{ lat: numb
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string } }) {
   try {
-    const sessionId = request.cookies.get("ctek-session")?.value
+    const cookieStore = cookies()
 
-    if (!sessionId) {
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    })
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const session = await SessionModel.findById(sessionId)
-    if (!session) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
+    const { data: dealer, error: dealerError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .eq("role", "dealer")
+      .single()
 
-    const user = await UserModel.findById(session.userId)
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 })
-    }
-
-    const dealer = await DealerModel.findByUserId(user.id)
-    if (!dealer || dealer.status !== "active") {
+    if (dealerError || !dealer || dealer.status !== "active") {
       return NextResponse.json({ error: "Dealer profile not found or not active" }, { status: 404 })
     }
 
     const { jobId } = params
 
-    const job = await JobModel.findById(jobId)
-    if (!job || job.status !== "pending") {
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select(`
+        *,
+        customer:users!jobs_customer_id_fkey(first_name, last_name)
+      `)
+      .eq("id", jobId)
+      .eq("status", "pending")
+      .single()
+
+    if (jobError || !job) {
       return NextResponse.json({ error: "Job not found or no longer available" }, { status: 404 })
     }
 
-    // Get customer info
-    const customer = await UserModel.findById(job.customerId)
-
     // Calculate distance between dealer and job
-    const dealerCoords = await getCoordinatesFromPostcode(dealer.businessPostcode)
-    const jobCoords = await getCoordinatesFromPostcode(job.customerPostcode)
+    const dealerCoords = await getCoordinatesFromPostcode(dealer.postcode)
+    const jobCoords = await getCoordinatesFromPostcode(job.customer_postcode)
 
     let distance = 0
     if (dealerCoords && jobCoords) {
@@ -81,7 +96,8 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
     }
 
     // Check if job is within dealer's service radius
-    if (distance > dealer.radiusMiles) {
+    const radiusMiles = dealer.radius_miles || 50
+    if (distance > radiusMiles) {
       return NextResponse.json({ error: "Job is outside your service area" }, { status: 403 })
     }
 
@@ -89,10 +105,10 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
       job: {
         ...job,
         distance_miles: distance,
-        customer: customer
+        customer: job.customer
           ? {
-              first_name: customer.firstName,
-              last_name: customer.lastName,
+              first_name: job.customer.first_name,
+              last_name: job.customer.last_name,
             }
           : null,
       },

@@ -1,20 +1,38 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await AuthService.getCurrentUser()
+    const cookieStore = cookies()
 
-    if (!result) {
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    })
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+
+    if (error || !user) {
       return NextResponse.json({ valid: false }, { status: 401 })
     }
 
     return NextResponse.json({
       valid: true,
-      user: result.user,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.user_metadata?.role || "customer",
+      },
       session: {
-        id: result.session.id,
-        expiresAt: result.session.expiresAt,
+        id: user.id,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       },
     })
   } catch (error) {

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { SessionModel, UserModel } from "@/lib/redis/models"
-import { DealerModel, JobModel } from "@/lib/redis/extended-models"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
 // Function to calculate distance between two points using Haversine formula
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -42,56 +42,74 @@ async function getCoordinatesFromPostcode(postcode: string): Promise<{ lat: numb
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionId = request.cookies.get("ctek-session")?.value
+    const cookieStore = cookies()
 
-    if (!sessionId) {
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    })
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const session = await SessionModel.findById(sessionId)
-    if (!session) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
+    const { data: dealer, error: dealerError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .eq("role", "dealer")
+      .single()
 
-    const user = await UserModel.findById(session.userId)
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 })
-    }
-
-    const dealer = await DealerModel.findByUserId(user.id)
-    if (!dealer || dealer.status !== "active") {
+    if (dealerError || !dealer || dealer.status !== "active") {
       return NextResponse.json({ error: "Dealer profile not found or not active" }, { status: 404 })
     }
 
     // Get dealer coordinates from postcode
-    const dealerCoords = await getCoordinatesFromPostcode(dealer.businessPostcode)
+    const dealerCoords = await getCoordinatesFromPostcode(dealer.postcode)
     if (!dealerCoords) {
       return NextResponse.json({ error: "Could not determine dealer location" }, { status: 400 })
     }
 
-    const allJobs = await JobModel.findAll()
-    const pendingJobs = allJobs.filter((job) => job.status === "pending" && !job.dealerId)
+    const { data: allJobs, error: jobsError } = await supabase
+      .from("jobs")
+      .select(`
+        *,
+        customer:users!jobs_customer_id_fkey(first_name, last_name)
+      `)
+      .eq("status", "pending")
+      .is("dealer_id", null)
+
+    if (jobsError) {
+      return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 })
+    }
 
     // Calculate distances and filter jobs within dealer's radius
     const jobsWithDistance = []
 
-    for (const job of pendingJobs) {
-      const jobCoords = await getCoordinatesFromPostcode(job.customerPostcode)
+    for (const job of allJobs || []) {
+      const jobCoords = await getCoordinatesFromPostcode(job.customer_postcode)
 
       if (jobCoords) {
         const distance = calculateDistance(dealerCoords.lat, dealerCoords.lng, jobCoords.lat, jobCoords.lng)
 
-        // Only include jobs within dealer's service radius
-        if (distance <= dealer.radiusMiles) {
-          // Get customer info
-          const customer = await UserModel.findById(job.customerId)
+        // Only include jobs within dealer's service radius (default 50 miles)
+        const radiusMiles = dealer.radius_miles || 50
+        if (distance <= radiusMiles) {
           jobsWithDistance.push({
             ...job,
             distance_miles: distance,
-            customer: customer
+            customer: job.customer
               ? {
-                  first_name: customer.firstName,
-                  last_name: customer.lastName,
+                  first_name: job.customer.first_name,
+                  last_name: job.customer.last_name,
                 }
               : null,
           })
@@ -101,7 +119,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       jobs: jobsWithDistance,
-      dealerLocation: dealer.businessPostcode,
+      dealerLocation: dealer.postcode,
       success: true,
     })
   } catch (error) {
