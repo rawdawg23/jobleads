@@ -19,6 +19,11 @@ const nextConfig = {
         },
       },
     },
+    serverComponentsExternalPackages: [
+      '@supabase/supabase-js',
+      '@supabase/realtime-js',
+      '@supabase/ssr'
+    ],
   },
   compress: true,
   poweredByHeader: false,
@@ -62,14 +67,6 @@ const nextConfig = {
     '@supabase/functions-js',
     '@supabase/gotrue-js'
   ],
-  experimental: {
-    ...nextConfig.experimental,
-    serverComponentsExternalPackages: [
-      '@supabase/supabase-js',
-      '@supabase/realtime-js',
-      '@supabase/ssr'
-    ],
-  },
 }
 
 export default nextConfig
