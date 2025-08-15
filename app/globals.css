@@ -254,7 +254,7 @@
 
   /* Added grey-specific glass variants */
   .glass-grey {
-    background: rgba(156, 163, 175, 0.15);
+    background: rgba(156, 163, 175, 0.4);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -271,7 +271,7 @@
 
   /* Added grey card variant */
   .glass-card-grey {
-    background: rgba(107, 114, 128, 0.2);
+    background: rgba(107, 114, 128, 0.35);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid rgba(255, 255, 255, 0.25);
