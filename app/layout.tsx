@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { DM_Sans, DM_Serif_Display } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
+import SiteMessageBanner from "@/components/site-message-banner"
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -52,7 +53,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${dmSerifDisplay.variable} antialiased`}>
       <body className="font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <SiteMessageBanner />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

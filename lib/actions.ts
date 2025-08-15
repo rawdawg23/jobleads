@@ -37,13 +37,13 @@ export async function signIn(prevState: any, formData: FormData) {
     const userRole = profile?.role || "customer"
     switch (userRole) {
       case "admin":
-        redirect("/admin")
+        redirect("/profile/admin")
         break
       case "dealer":
-        redirect("/dealer")
+        redirect("/profile/dealer")
         break
       default:
-        redirect("/dashboard")
+        redirect("/profile/customer")
     }
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_REDIRECT")) {

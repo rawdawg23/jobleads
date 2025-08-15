@@ -35,11 +35,11 @@ export async function requireRole(allowedRoles: string[]) {
 export function getRedirectPath(role: string) {
   switch (role) {
     case "admin":
-      return "/admin"
+      return "/profile/admin"
     case "dealer":
-      return "/dealer"
+      return "/profile/dealer"
     case "customer":
     default:
-      return "/dashboard"
+      return "/profile/customer"
   }
 }

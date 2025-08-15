@@ -83,7 +83,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initializeAuth()
-  }, [mounted, supabase.auth])
+  }, [mounted])
+
+  useEffect(() => {
+    if (!mounted || !user) return
+
+    // Subscribe to real-time profile updates
+    const profileSubscription = supabase
+      .channel("profile-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setUser((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    firstName: payload.new.first_name || prev.firstName,
+                    lastName: payload.new.last_name || prev.lastName,
+                    phoneNumber: payload.new.phone_number || prev.phoneNumber,
+                    role: payload.new.role || prev.role,
+                    updatedAt: payload.new.updated_at || prev.updatedAt,
+                  }
+                : null,
+            )
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      profileSubscription.unsubscribe()
+    }
+  }, [mounted, user])
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
