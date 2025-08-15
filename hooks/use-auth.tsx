@@ -52,13 +52,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const unsubscribe = subscribeToGlobalAuth(async (globalState: any) => {
+        console.log("[v0] AuthProvider received global state:", {
+          loading: globalState.loading,
+          hasSession: !!globalState.session,
+        })
+
         setLoading(globalState.loading)
 
-        if (globalState.session?.user && !user) {
+        if (globalState.session?.user) {
           await loadUserProfile(globalState.session.user)
-        } else if (!globalState.session?.user) {
+        } else {
+          console.log("[v0] No session - clearing user data and setting loading to false")
           setUser(null)
           setHasPremiumAccess(false)
+          setLoading(false)
         }
       })
 
@@ -70,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("[v0] Failed to subscribe to global auth:", error)
       setLoading(false)
     }
-  }, [])
+  }, []) // Keep empty dependency array but fix stale closure issue above
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
