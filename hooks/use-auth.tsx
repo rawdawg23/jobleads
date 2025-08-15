@@ -44,14 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
     setMounted(true)
+    try {
+      const client = createClient()
+      setSupabase(client)
+    } catch (error) {
+      console.warn("Failed to create Supabase client:", error)
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || !supabase) return
 
     const initializeAuth = async () => {
       try {
@@ -83,10 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initializeAuth()
-  }, [mounted])
+  }, [mounted, supabase])
 
   useEffect(() => {
-    if (!mounted || !user) return
+    if (!mounted || !user || !supabase) return
 
     // Subscribe to real-time profile updates
     const profileSubscription = supabase
@@ -121,9 +128,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       profileSubscription.unsubscribe()
     }
-  }, [mounted, user])
+  }, [mounted, user, supabase])
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
+    if (!supabase) return
+
     try {
       // Get user profile from users table
       const { data: profile } = await supabase.from("users").select("*").eq("id", authUser.id).single()
@@ -146,6 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: "Authentication service not available" }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -172,6 +183,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: "customer" | "dealer" | "admin"
     },
   ) => {
+    if (!supabase) return { error: "Authentication service not available" }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -179,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           emailRedirectTo:
             process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
+            `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/profile`,
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
@@ -215,6 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    if (!supabase) return
+
     try {
       await supabase.auth.signOut()
       setUser(null)
@@ -224,7 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  if (!mounted) {
+  if (!mounted || !supabase) {
     return null
   }
 
