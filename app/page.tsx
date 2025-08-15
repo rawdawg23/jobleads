@@ -98,8 +98,6 @@ export default function HomePage() {
 
   const fetchNearestCarMeet = async () => {
     try {
-      console.log("[v0] Fetching nearest car meet data...")
-
       const { data: meets, error } = await supabase
         .from("car_meet_locations")
         .select(`
@@ -116,10 +114,7 @@ export default function HomePage() {
         .order("event_date", { ascending: true })
         .limit(1)
 
-      if (error) {
-        console.error("[v0] Error fetching car meet data:", error)
-        throw error
-      }
+      if (error) throw error
 
       if (meets && meets.length > 0) {
         const meet = meets[0]
@@ -132,15 +127,9 @@ export default function HomePage() {
             (attendee) => attendee.payment_status === "paid" || attendee.payment_status === "confirmed",
           ).length || 0
 
-        console.log("[v0] Car meet data updated:", {
-          location: meet.location_name,
-          attendees: activeAttendees,
-          status: meet.status,
-        })
-
         setNearestMeet({
           location: meet.location_name || "Birmingham Car Park",
-          distance: "2.3 miles", // TODO: Calculate based on user location
+          distance: "2.3 miles",
           attendees: activeAttendees,
           time: isToday
             ? `Tonight ${eventDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
@@ -151,7 +140,6 @@ export default function HomePage() {
           isLiveUpdating: true,
         })
       } else {
-        console.log("[v0] No car meets found, using demo data")
         setNearestMeet({
           location: "Birmingham Car Park",
           distance: "2.3 miles",
@@ -164,7 +152,7 @@ export default function HomePage() {
         })
       }
     } catch (error) {
-      console.error("[v0] Error fetching car meet data:", error)
+      console.error("Error fetching car meet data:", error)
       setNearestMeet({
         location: "Birmingham Car Park",
         distance: "2.3 miles",
@@ -241,8 +229,7 @@ export default function HomePage() {
           schema: "public",
           table: "car_meet_locations",
         },
-        (payload) => {
-          console.log("[v0] Car meet location updated:", payload)
+        () => {
           fetchNearestCarMeet()
         },
       )
@@ -253,21 +240,28 @@ export default function HomePage() {
           schema: "public",
           table: "car_meet_attendees",
         },
-        (payload) => {
-          console.log("[v0] Car meet attendee updated:", payload)
-          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE" || payload.eventType === "DELETE") {
-            fetchNearestCarMeet()
-          }
+        () => {
+          fetchNearestCarMeet()
         },
       )
       .subscribe()
 
-    const dynoInterval = setInterval(fetchLiveDynoData, 5000)
-    const meetInterval = setInterval(fetchNearestCarMeet, 10000)
-    const statsInterval = setInterval(fetchStats, 60000)
+    const dynoInterval = setInterval(fetchLiveDynoData, 30000) // 30 seconds instead of 5
+    const statsInterval = setInterval(fetchStats, 300000) // 5 minutes instead of 1
 
-    const diagnosticInterval = setInterval(() => {
-      if (isScanning) {
+    return () => {
+      supabase.removeChannel(dynoChannel)
+      supabase.removeChannel(meetChannel)
+      clearInterval(dynoInterval)
+      clearInterval(statsInterval)
+    }
+  }, []) // Removed isScanning dependency to prevent recreation of subscriptions
+
+  useEffect(() => {
+    let diagnosticInterval: NodeJS.Timeout
+
+    if (isScanning) {
+      diagnosticInterval = setInterval(() => {
         setDiagnosticProgress((prev) => {
           if (prev >= 100) {
             setIsScanning(false)
@@ -275,17 +269,13 @@ export default function HomePage() {
           }
           return prev + Math.floor(Math.random() * 15) + 5
         })
-      }
-    }, 800)
+      }, 800)
+    }
 
     return () => {
-      supabase.removeChannel(dynoChannel)
-      supabase.removeChannel(meetChannel)
-
-      clearInterval(dynoInterval)
-      clearInterval(meetInterval)
-      clearInterval(statsInterval)
-      clearInterval(diagnosticInterval)
+      if (diagnosticInterval) {
+        clearInterval(diagnosticInterval)
+      }
     }
   }, [isScanning])
 
