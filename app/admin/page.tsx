@@ -82,7 +82,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-slate-900">
-                {user.firstName} {user.lastName}
+                {user.first_name} {user.last_name}
               </span>
               <Badge variant="destructive">Admin</Badge>
             </div>

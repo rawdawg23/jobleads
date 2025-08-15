@@ -66,7 +66,7 @@ export function RegisterForm() {
               <User className="h-4 w-4" />
               Account Type
             </Label>
-            <Select name="accountType" defaultValue="Customer - Post Jobs">
+            <Select name="accountType" defaultValue="Customer - Post Jobs" required>
               <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500">
                 <SelectValue />
               </SelectTrigger>

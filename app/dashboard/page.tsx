@@ -128,7 +128,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-sm">
                   <p className="font-semibold text-gray-900">
-                    {user.firstName} {user.lastName}
+                    {user.first_name} {user.last_name}
                   </p>
                   <Badge variant={isAdmin ? "destructive" : isDealer ? "default" : "secondary"} className="text-xs">
                     {user.role}
@@ -147,7 +147,7 @@ export default function DashboardPage() {
       <div className="container mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Welcome back, {user.firstName}! 👋</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Welcome back, {user.first_name}! 👋</h1>
           <p className="text-xl text-gray-600">
             {isCustomer && "Manage your ECU remapping jobs and connect with certified dealers"}
             {isDealer && "View available jobs in your area and grow your business"}

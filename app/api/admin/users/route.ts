@@ -1,32 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { redisClient } from "@/lib/redis/client"
+import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    // Check if user is authenticated and is admin
-    const result = await AuthService.getCurrentUser()
+    const supabase = createClient()
 
-    if (!result || result.user.role !== "admin") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get all user keys
-    const userKeys = await redisClient.keys("user:*")
-    const users = []
-
-    // Fetch all users
-    for (const key of userKeys) {
-      const userData = await redisClient.get(key)
-      if (userData) {
-        users.push(JSON.parse(userData as string))
-      }
+    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Sort by creation date (newest first)
-    users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, email, role, first_name, last_name, phone, created_at")
+      .order("created_at", { ascending: false })
 
-    return NextResponse.json({ users })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ users: data || [] })
   } catch (error) {
     console.error("Admin users API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

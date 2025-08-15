@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,34 +10,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 })
     }
 
-    const userData = {
+    const supabase = createRouteHandlerClient({ cookies })
+
+    const { error } = await supabase.auth.signUp({
       email,
-      firstName,
-      lastName,
-      phoneNumber: phoneNumber || "",
-      role: role || "customer",
-    }
-
-    const result = await AuthService.signUp(userData, password)
-
-    if ("error" in result) {
-      return NextResponse.json({ error: result.error }, { status: 400 })
-    }
-
-    const { user, session } = result
-
-    const response = NextResponse.json({ user })
-
-    // Set session cookie
-    response.cookies.set("ctek-session", session.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          phone: phoneNumber || "",
+          role: role || "customer",
+        },
+      },
     })
 
-    return response
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Sign up API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

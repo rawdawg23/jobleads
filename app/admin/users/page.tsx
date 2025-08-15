@@ -10,15 +10,15 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 
-interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  phoneNumber: string
-  role: "customer" | "dealer" | "admin"
-  createdAt: string
-}
+  interface User {
+    id: string
+    email: string
+    first_name: string
+    last_name: string
+    phone: string | null
+    role: "customer" | "dealer" | "admin"
+    created_at: string
+  }
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
                   {users?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
-                        {user.firstName} {user.lastName}
+                        {user.first_name} {user.last_name}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -161,10 +161,10 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {user.phoneNumber ? (
+                        {user.phone ? (
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-slate-400" />
-                            {user.phoneNumber}
+                                                          {user.phone}
                           </div>
                         ) : (
                           <span className="text-slate-400">Not provided</span>
@@ -173,7 +173,7 @@ export default function AdminUsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-slate-400" />
-                          {formatDate(user.createdAt)}
+                          {formatDate(user.created_at)}
                         </div>
                       </TableCell>
                       <TableCell>
