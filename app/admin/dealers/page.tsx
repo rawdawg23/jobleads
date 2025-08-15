@@ -42,6 +42,11 @@ export default function AdminDealersPage() {
   const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null)
   const [adminNotes, setAdminNotes] = useState("")
   const [updating, setUpdating] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -50,10 +55,10 @@ export default function AdminDealersPage() {
   }, [user, loading, isAdmin, router])
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isAdmin && mounted) {
       fetchDealers()
     }
-  }, [user, isAdmin])
+  }, [user, isAdmin, mounted])
 
   const fetchDealers = async () => {
     try {
@@ -119,7 +124,7 @@ export default function AdminDealersPage() {
     }
   }
 
-  if (loading || loadingDealers) {
+  if (!mounted || loading || loadingDealers) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
