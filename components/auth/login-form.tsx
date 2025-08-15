@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +16,7 @@ export function LoginForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -35,7 +36,7 @@ export function LoginForm() {
       if (authError) {
         setError(authError.message)
       } else if (data.user) {
-        router.push("/profile")
+        router.push("/dashboard")
         router.refresh()
       }
     } catch (error) {
