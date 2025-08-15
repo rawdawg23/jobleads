@@ -57,11 +57,6 @@ export default function HomePage() {
     }
 
     try {
-      if (!supabase.auth) {
-        console.warn("[v0] Supabase auth not available, using demo data")
-        throw new Error("Auth not available")
-      }
-
       const { data: sessions, error } = await supabase
         .from("dyno_sessions")
         .select(`
@@ -126,11 +121,6 @@ export default function HomePage() {
     }
 
     try {
-      if (!supabase.auth) {
-        console.warn("[v0] Supabase auth not available, using demo data")
-        throw new Error("Auth not available")
-      }
-
       const { data: meets, error } = await supabase
         .from("car_meet_locations")
         .select(`
@@ -194,11 +184,6 @@ export default function HomePage() {
     }
 
     try {
-      if (!supabase.auth) {
-        console.warn("[v0] Supabase auth not available, using demo data")
-        throw new Error("Auth not available")
-      }
-
       const [usersResult, companiesResult, jobsResult] = await Promise.allSettled([
         supabase.from("users").select("id", { count: "exact", head: true }),
         supabase.from("companies").select("id", { count: "exact", head: true }).eq("status", "active"),
@@ -227,8 +212,8 @@ export default function HomePage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!supabase || hasError) {
-      console.warn("[v0] Skipping data fetch - client not ready or has error")
+    if (!supabase) {
+      console.warn("[v0] Skipping data fetch - client not ready")
       return
     }
 
@@ -244,7 +229,7 @@ export default function HomePage() {
 
     const interval = setInterval(fetchAllData, 300000)
     return () => clearInterval(interval)
-  }, [supabase, hasError, fetchDynoData, fetchCarMeetData, fetchStats])
+  }, [supabase, fetchDynoData, fetchCarMeetData, fetchStats])
 
   useEffect(() => {
     const scanningInterval = setInterval(() => {
