@@ -1,8 +1,16 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createServerActionClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
+
+export async function createClient() {
+  const cookieStore = await cookies()
+  
+  return createServerActionClient({
+    cookies: () => cookieStore,
+  })
+}
 
 // Update the signIn function to handle redirects properly
 export async function signIn(prevState: any, formData: FormData) {
@@ -80,5 +88,5 @@ export async function signOut() {
   const supabase = createServerActionClient({ cookies: () => cookieStore })
 
   await supabase.auth.signOut()
-  redirect("/auth/login")
+  revalidatePath("/auth/login")
 }
