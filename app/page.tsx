@@ -8,6 +8,9 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase"
 
 export default function HomePage() {
+  const [supabase, setSupabase] = useState<any>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+
   const [dynoData, setDynoData] = useState({
     power: 0,
     torque: 0,
@@ -35,9 +38,30 @@ export default function HomePage() {
     completedRemaps: 0,
   })
 
-  const supabase = createClient()
+  useEffect(() => {
+    try {
+      const client = createClient()
+      setSupabase(client)
+      setIsInitialized(true)
+      console.log("[v0] HomePage component mounted and Supabase client initialized")
+    } catch (error) {
+      console.error("[v0] Failed to initialize Supabase client:", error)
+      setIsInitialized(true) // Still allow component to render with demo data
+    }
+  }, [])
 
   const fetchLiveDynoData = async () => {
+    if (!supabase) {
+      setDynoData({
+        power: Math.floor(Math.random() * 50) + 220,
+        torque: Math.floor(Math.random() * 80) + 340,
+        rpm: Math.floor(Math.random() * 2000) + 2500,
+        temp: Math.floor(Math.random() * 20) + 80,
+        isLive: false,
+      })
+      return
+    }
+
     try {
       const { data: sessions, error } = await supabase
         .from("dyno_sessions")
@@ -59,7 +83,6 @@ export default function HomePage() {
 
       if (sessions && sessions.length > 0) {
         const session = sessions[0]
-        // Get the latest sensor reading
         const latestReading = session.sensor_readings.sort(
           (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         )[0]
@@ -74,7 +97,6 @@ export default function HomePage() {
           })
         }
       } else {
-        // Fallback to demo data
         setDynoData({
           power: Math.floor(Math.random() * 50) + 220,
           torque: Math.floor(Math.random() * 80) + 340,
@@ -85,7 +107,6 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Error fetching dyno data:", error)
-      // Fallback to demo data
       setDynoData({
         power: Math.floor(Math.random() * 50) + 220,
         torque: Math.floor(Math.random() * 80) + 340,
@@ -97,6 +118,20 @@ export default function HomePage() {
   }
 
   const fetchNearestCarMeet = async () => {
+    if (!supabase) {
+      setNearestMeet({
+        location: "Birmingham Car Park",
+        distance: "2.3 miles",
+        attendees: 12,
+        time: "Tonight 7:00 PM",
+        id: null,
+        status: "active",
+        lastUpdated: new Date(),
+        isLiveUpdating: false,
+      })
+      return
+    }
+
     try {
       const { data: meets, error } = await supabase
         .from("car_meet_locations")
@@ -167,6 +202,15 @@ export default function HomePage() {
   }
 
   const fetchStats = async () => {
+    if (!supabase) {
+      setStats({
+        totalJobs: 47,
+        activeDealers: 23,
+        completedRemaps: 156,
+      })
+      return
+    }
+
     try {
       const [jobsResult, dealersResult, remapsResult] = await Promise.all([
         supabase.from("jobs").select("id", { count: "exact" }).eq("status", "active"),
@@ -190,9 +234,13 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    if (!isInitialized) return
+
     fetchLiveDynoData()
     fetchNearestCarMeet()
     fetchStats()
+
+    if (!supabase) return
 
     const dynoChannel = supabase
       .channel("dyno-updates")
@@ -246,16 +294,18 @@ export default function HomePage() {
       )
       .subscribe()
 
-    const dynoInterval = setInterval(fetchLiveDynoData, 30000) // 30 seconds instead of 5
-    const statsInterval = setInterval(fetchStats, 300000) // 5 minutes instead of 1
+    const dynoInterval = setInterval(fetchLiveDynoData, 30000)
+    const statsInterval = setInterval(fetchStats, 300000)
 
     return () => {
-      supabase.removeChannel(dynoChannel)
-      supabase.removeChannel(meetChannel)
+      if (supabase) {
+        supabase.removeChannel(dynoChannel)
+        supabase.removeChannel(meetChannel)
+      }
       clearInterval(dynoInterval)
       clearInterval(statsInterval)
     }
-  }, []) // Removed isScanning dependency to prevent recreation of subscriptions
+  }, [isInitialized, supabase])
 
   useEffect(() => {
     let diagnosticInterval: NodeJS.Timeout
