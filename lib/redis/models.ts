@@ -78,7 +78,9 @@ export class UserModel {
     if (!isRedisConfigured) return null
 
     const userData = await redisClient.get(RedisKeys.user(id))
-    return userData ? JSON.parse(userData as string) : null
+    if (!userData) return null
+
+    return typeof userData === "string" ? (JSON.parse(userData) as User) : (userData as User)
   }
 
   static async findByEmail(email: string): Promise<User | null> {
@@ -99,7 +101,8 @@ export class UserModel {
     const credentialsData = await redisClient.get(RedisKeys.userCredentials(user.id))
     if (!credentialsData) return null
 
-    const credentials: UserCredentials = JSON.parse(credentialsData as string)
+    const credentials: UserCredentials =
+      typeof credentialsData === "string" ? (JSON.parse(credentialsData) as UserCredentials) : (credentialsData as UserCredentials)
     const isValid = await WebCrypto.compare(password, credentials.passwordHash)
 
     return isValid ? user : null
@@ -153,7 +156,8 @@ export class SessionModel {
     const sessionData = await redisClient.get(RedisKeys.session(sessionId))
     if (!sessionData) return null
 
-    const session: Session = JSON.parse(sessionData as string)
+    const session: Session =
+      typeof sessionData === "string" ? (JSON.parse(sessionData) as Session) : (sessionData as Session)
 
     // Check if session is expired
     if (new Date(session.expiresAt) < new Date()) {
