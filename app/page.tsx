@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Menu, X, Zap, Gauge, MapPin, Users, TrendingUp, Settings, Car, Activity } from "lucide-react"
 
 export default function HomePage() {
-  const [supabase, setSupabase] = useState<any>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dynoData, setDynoData] = useState({
     power: 0,
@@ -31,28 +30,27 @@ export default function HomePage() {
     monthlyRevenue: 0,
   })
   const [isScanning, setIsScanning] = useState(false)
-  const [hasError, setHasError] = useState(false)
 
-  useEffect(() => {
-    console.log("[v0] HomePage component mounting")
+  const getSupabaseClient = useCallback(() => {
     try {
-      const client = createClient()
-      if (client) {
-        setSupabase(client)
-        console.log("[v0] Supabase client initialized successfully")
-      } else {
-        console.error("[v0] Failed to create Supabase client")
-        setHasError(true)
-      }
+      return createClient()
     } catch (error) {
-      console.error("[v0] Failed to initialize Supabase client:", error)
-      setHasError(true)
+      console.error("[v0] Failed to create Supabase client:", error)
+      return null
     }
   }, [])
 
   const fetchDynoData = useCallback(async () => {
+    const supabase = getSupabaseClient()
     if (!supabase) {
-      console.warn("[v0] Supabase client not ready for dyno data fetch")
+      console.warn("[v0] Supabase client not available for dyno data fetch")
+      setDynoData({
+        power: 420 + Math.random() * 50,
+        torque: 580 + Math.random() * 70,
+        rpm: 6500 + Math.random() * 500,
+        ecuTemp: 85 + Math.random() * 15,
+        isLive: false,
+      })
       return
     }
 
@@ -112,11 +110,19 @@ export default function HomePage() {
         isLive: false,
       })
     }
-  }, [supabase])
+  }, [getSupabaseClient])
 
   const fetchCarMeetData = useCallback(async () => {
+    const supabase = getSupabaseClient()
     if (!supabase) {
-      console.warn("[v0] Supabase client not ready for car meet data fetch")
+      console.warn("[v0] Supabase client not available for car meet data fetch")
+      setCarMeetData({
+        title: "Birmingham ECU Meet",
+        location: "Birmingham City Centre",
+        attendees: 45,
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        isLive: false,
+      })
       return
     }
 
@@ -175,11 +181,18 @@ export default function HomePage() {
         isLive: false,
       })
     }
-  }, [supabase])
+  }, [getSupabaseClient])
 
   const fetchStats = useCallback(async () => {
+    const supabase = getSupabaseClient()
     if (!supabase) {
-      console.warn("[v0] Supabase client not ready for stats fetch")
+      console.warn("[v0] Supabase client not available for stats fetch")
+      setStats({
+        totalUsers: 1247,
+        activeDealers: 89,
+        completedJobs: 3456,
+        monthlyRevenue: 45670,
+      })
       return
     }
 
@@ -209,27 +222,25 @@ export default function HomePage() {
         monthlyRevenue: 45670,
       })
     }
-  }, [supabase])
+  }, [getSupabaseClient])
 
   useEffect(() => {
-    if (!supabase) {
-      console.warn("[v0] Skipping data fetch - client not ready")
-      return
-    }
+    console.log("[v0] HomePage component mounting")
 
     const fetchAllData = async () => {
       try {
         await Promise.allSettled([fetchDynoData(), fetchCarMeetData(), fetchStats()])
+        console.log("[v0] Initial data fetch completed")
       } catch (error) {
-        console.error("[v0] Error in fetchAllData:", error)
+        console.error("[v0] Error in initial fetchAllData:", error)
       }
     }
 
     fetchAllData()
 
-    const interval = setInterval(fetchAllData, 300000)
+    const interval = setInterval(fetchAllData, 300000) // 5 minutes
     return () => clearInterval(interval)
-  }, [supabase, fetchDynoData, fetchCarMeetData, fetchStats])
+  }, [fetchDynoData, fetchCarMeetData, fetchStats])
 
   useEffect(() => {
     const scanningInterval = setInterval(() => {
@@ -238,18 +249,6 @@ export default function HomePage() {
 
     return () => clearInterval(scanningInterval)
   }, [])
-
-  if (hasError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-4xl font-bold mb-4">CTEK ECU Remapping</h1>
-          <p className="text-slate-300 mb-4">Loading platform data...</p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-800">
@@ -487,9 +486,8 @@ export default function HomePage() {
 
           <Card className="glass-card border-purple-500/30">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-3">
-                <div className="led-green"></div>
-                <TrendingUp className="w-5 h-5" />
+              <CardTitle className="text-white flex items-center gap-3 text-xl">
+                <TrendingUp className="w-6 h-6" />
                 Platform Stats
               </CardTitle>
             </CardHeader>
