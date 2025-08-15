@@ -1,5 +1,6 @@
 import { UserModel, SessionModel, type User, type Session } from "./models"
 import { cookies } from "next/headers"
+import { isRedisConfigured } from "./client"
 
 export class AuthService {
   private static readonly SESSION_COOKIE_NAME = "ctek-session"
@@ -16,6 +17,14 @@ export class AuthService {
     password: string,
   ): Promise<{ user: User; session: Session } | { error: string }> {
     try {
+      // Check if Redis is configured
+      if (!isRedisConfigured) {
+        console.error("Authentication failed: Redis is not configured")
+        return { 
+          error: "Authentication service is not configured. Please check the console for details and contact support." 
+        }
+      }
+
       // Check if user already exists
       const existingUser = await UserModel.findByEmail(userData.email)
       if (existingUser) {
@@ -37,6 +46,14 @@ export class AuthService {
 
   static async signIn(email: string, password: string): Promise<{ user: User; session: Session } | { error: string }> {
     try {
+      // Check if Redis is configured
+      if (!isRedisConfigured) {
+        console.error("Authentication failed: Redis is not configured")
+        return { 
+          error: "Authentication service is not configured. Please check the console for details and contact support." 
+        }
+      }
+
       // Verify credentials
       const user = await UserModel.verifyPassword(email, password)
       if (!user) {
@@ -49,7 +66,11 @@ export class AuthService {
       return { user, session }
     } catch (error) {
       console.error("SignIn error:", error)
-      return { error: "Failed to sign in" }
+      // Provide more specific error information
+      if (error instanceof Error) {
+        return { error: error.message }
+      }
+      return { error: "Failed to sign in. Please try again." }
     }
   }
 

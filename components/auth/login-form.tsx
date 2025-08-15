@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Mail, Lock, LogIn } from "lucide-react"
+import { Loader2, Mail, Lock, LogIn, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -55,12 +55,27 @@ export function LoginForm() {
         <CardDescription className="text-lg text-gray-600">
           Sign in to access your CTEK JOB LEADS account
         </CardDescription>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-yellow-800 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Development Mode - Check console for Redis configuration status</span>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <form action={formAction} className="space-y-6">
           {state?.error && (
             <Alert variant="destructive" className="border-red-200 bg-red-50">
-              <AlertDescription className="text-red-800">{state.error}</AlertDescription>
+              <AlertDescription className="text-red-800">
+                {state.error}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-2 text-sm text-red-600">
+                    Check the console for more details.
+                  </div>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 
