@@ -16,6 +16,9 @@ interface Stats {
   monthlyRevenue: number
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [isBuildTime, setIsBuildTime] = useState(typeof window === "undefined")
