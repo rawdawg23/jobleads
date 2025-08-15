@@ -9,6 +9,7 @@ import { Shield, ArrowLeft, Mail, Phone, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
+import { Suspense } from "react"
 
 interface User {
   id: string
@@ -20,7 +21,7 @@ interface User {
   createdAt: string
 }
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -226,5 +227,22 @@ export default function AdminUsersPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminUsersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading users...</p>
+          </div>
+        </div>
+      }
+    >
+      <AdminUsersContent />
+    </Suspense>
   )
 }
