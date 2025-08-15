@@ -1,6 +1,7 @@
+"use client"
+
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
-;("use client")
 
 import type React from "react"
 import { Suspense, useState } from "react"
