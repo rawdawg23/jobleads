@@ -19,11 +19,6 @@ const nextConfig = {
         },
       },
     },
-    serverComponentsExternalPackages: [
-      '@supabase/supabase-js',
-      '@supabase/realtime-js',
-      '@supabase/ssr'
-    ],
   },
   compress: true,
   poweredByHeader: false,
