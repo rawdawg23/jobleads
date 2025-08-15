@@ -111,7 +111,7 @@ export const metadata: Metadata = {
       "UK's leading ECU remapping specialists. Professional engine tuning, DPF delete, EGR removal, live dyno testing & car meet locations. Stage 1-3 performance maps. Mobile & workshop services nationwide.",
     type: "website",
     locale: "en_GB",
-    url: "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app",
+    url: "https://ctek.club",
     siteName: "CTEK ECU Remapping Network",
     images: [
       {
@@ -148,7 +148,7 @@ export const metadata: Metadata = {
     yahoo: "your-yahoo-verification-code",
   },
   alternates: {
-    canonical: "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app",
+    canonical: "https://ctek.club",
   },
   other: {
     "geo.region": "GB",
@@ -164,7 +164,7 @@ export const metadata: Metadata = {
     "DC.date": new Date().toISOString(),
     "DC.type": "Service",
     "DC.format": "text/html",
-    "DC.identifier": "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app",
+    "DC.identifier": "https://ctek.club",
     "DC.language": "en-GB",
     "DC.coverage": "United Kingdom",
     "DC.rights": "Copyright CTEK ECU Remapping Network",
@@ -198,7 +198,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.png" type="image/svg+xml" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
-        <link rel="canonical" href="https://jobleads-zmku-m7dds5tmr-grgg.vercel.app" />
+        <link rel="canonical" href="https://ctek.club" />
 
         {/* Structured Data for Local Business */}
         <script
@@ -210,9 +210,9 @@ export default function RootLayout({
               name: "CTEK ECU Remapping Network",
               description:
                 "Professional ECU remapping, engine tuning, DPF delete and automotive diagnostic services across the UK",
-              url: "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app",
-              logo: "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app/favicon.png",
-              image: "https://jobleads-zmku-m7dds5tmr-grgg.vercel.app/favicon.png",
+              url: "https://ctek.club",
+              logo: "https://ctek.club/favicon.png",
+              image: "https://ctek.club/favicon.png",
               telephone: "+44-800-ECU-REMAP",
               email: "info@ctekremapping.co.uk",
               address: {
