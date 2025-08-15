@@ -1,15 +1,15 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/supabase-js"
 
 export const isSupabaseConfigured = true
 
 export const createClient = () => {
-  return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
 
 export const supabase = createClient()
 
 // Server-side Supabase client
-export const createServerSupabaseClient = () => createClient()
+export const createSSRClient = () => createClient()
 
 // Database types
 export type UserRole = "customer" | "dealer" | "admin"

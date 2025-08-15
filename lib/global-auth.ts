@@ -65,6 +65,13 @@ function ensureInitialized() {
     }
   }
 
+  globalAuthState.loading = false
+  globalAuthState.initialized = true
+  globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
+
+  // Notify all listeners immediately
+  globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
+
   setTimeout(() => {
     if (globalAuthState.loading) {
       console.log("[v0] Auth loading timeout - setting loading to false")
@@ -74,9 +81,6 @@ function ensureInitialized() {
       globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
     }
   }, 3000) // 3 second timeout
-
-  globalAuthState.initialized = true
-  globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
 }
 
 export function subscribeToGlobalAuth(callback: (state: any) => void) {

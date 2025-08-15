@@ -107,6 +107,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/auth/callback"
 
     const isPublicRoute =
+      request.nextUrl.pathname === "/" || // Added homepage as public route
       request.nextUrl.pathname.startsWith("/dealers") ||
       request.nextUrl.pathname.startsWith("/_next") ||
       request.nextUrl.pathname.startsWith("/admin-direct") ||
