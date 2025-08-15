@@ -101,30 +101,19 @@ export const paymentConfirmationTemplate = (userName: string, amount: number, ty
   <div style="padding: 30px; background: #faf5ff; border-radius: 8px; margin: 20px 0;">
     <h2 style="color: #7c3aed; margin-top: 0;">Hi ${userName},</h2>
     <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-      Your payment has been successfully processed and confirmed by our admin team.
+      Your payment of £${amount} has been successfully processed.
     </p>
     
     <div style="background: white; padding: 20px; border-radius: 6px; margin: 20px 0;">
       <h3 style="color: #7c3aed; margin-top: 0;">Payment Details:</h3>
       <p><strong>Amount:</strong> £${amount}</p>
-      <p><strong>Type:</strong> ${type === "job" ? "Job Posting Fee" : "Dealer Subscription"}</p>
+      <p><strong>Type:</strong> ${type === "job" ? "Job Payment" : "Subscription Payment"}</p>
       <p><strong>Status:</strong> Confirmed</p>
     </div>
     
     <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-      ${
-        type === "job"
-          ? "Your job is now active and visible to dealers in your area."
-          : "Your dealer account is now active and you can start applying for jobs."
-      }
+      Thank you for using our services. If you have any questions, please don't hesitate to contact our support team.
     </p>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" 
-         style="background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        Go to Dashboard
-      </a>
-    </div>
   </div>
   
   <div style="text-align: center; color: #6b7280; font-size: 14px;">
@@ -133,3 +122,73 @@ export const paymentConfirmationTemplate = (userName: string, amount: number, ty
 </body>
 </html>
 `
+
+export const sendPasswordResetEmail = async (email: string, resetToken: string, firstName: string) => {
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`
+  
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Reset Your Password</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); color: white; padding: 30px; border-radius: 8px; text-align: center;">
+    <h1 style="margin: 0; font-size: 28px;">Reset Your Password</h1>
+  </div>
+  
+  <div style="padding: 30px; background: #fef2f2; border-radius: 8px; margin: 20px 0;">
+    <h2 style="color: #dc2626; margin-top: 0;">Hi ${firstName},</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #374151;">
+      We received a request to reset your password. Click the button below to create a new password.
+    </p>
+    
+    <div style="background: white; padding: 20px; border-radius: 6px; margin: 20px 0;">
+      <p style="font-size: 14px; color: #6b7280; margin: 0;">
+        <strong>Important:</strong> This link will expire in 1 hour for security reasons.
+      </p>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${resetUrl}" 
+         style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </div>
+    
+    <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+      If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.
+    </p>
+    
+    <p style="font-size: 14px; line-height: 1.6; color: #6b7280;">
+      If the button above doesn't work, copy and paste this link into your browser:
+    </p>
+    
+    <p style="font-size: 12px; color: #9ca3af; word-break: break-all;">
+      ${resetUrl}
+    </p>
+  </div>
+  
+  <div style="text-align: center; color: #6b7280; font-size: 14px;">
+    <p>ECU Remap Pro - Professional ECU Remapping Services</p>
+  </div>
+</body>
+</html>
+  `
+
+  // For now, just log the email content
+  // In production, you would send this via your email service
+  console.log("Password reset email would be sent to:", email)
+  console.log("Reset URL:", resetUrl)
+  
+  // TODO: Integrate with your email service (Resend, SendGrid, etc.)
+  // await resend.emails.send({
+  //   from: 'noreply@yourdomain.com',
+  //   to: email,
+  //   subject: 'Reset Your Password - ECU Remap Pro',
+  //   html: htmlContent,
+  // })
+  
+  return true
+}

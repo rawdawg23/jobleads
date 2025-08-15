@@ -156,6 +156,7 @@ export function RegisterForm() {
               placeholder="Create a secure password"
               className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
             />
+            <p className="text-xs text-gray-500">Password must be at least 8 characters long</p>
           </div>
 
           <SubmitButton />
@@ -169,6 +170,15 @@ export function RegisterForm() {
               className="font-semibold text-purple-600 hover:text-purple-700 transition-colors duration-200"
             >
               Sign in here
+            </Link>
+          </p>
+          <p className="text-gray-600 mt-2">
+            Forgot your password?{" "}
+            <Link
+              href="/auth/forgot-password"
+              className="font-semibold text-purple-600 hover:text-purple-700 transition-colors duration-200"
+            >
+              Reset it here
             </Link>
           </p>
         </div>

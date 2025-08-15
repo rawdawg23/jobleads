@@ -107,6 +107,14 @@ export function LoginForm() {
               placeholder="Enter your password"
               className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
             />
+            <div className="text-right">
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200"
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </div>
 
           <SubmitButton />
