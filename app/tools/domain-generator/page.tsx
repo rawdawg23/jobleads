@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Copy, RefreshCw, Search, Zap, Car, Settings } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 const TLD_OPTIONS = [".com", ".co.uk", ".net", ".org", ".io", ".tech", ".auto", ".car"]
 
 const ECU_KEYWORDS = [

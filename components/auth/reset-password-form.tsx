@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Lock, CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { resetPassword } from "@/lib/actions"
 
 function SubmitButton() {
@@ -37,7 +37,7 @@ function SubmitButton() {
   )
 }
 
-export function ResetPasswordForm() {
+function ResetPasswordFormContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token") || searchParams.get("access_token")
@@ -160,5 +160,28 @@ export function ResetPasswordForm() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+export function ResetPasswordForm() {
+  return (
+    <Suspense
+      fallback={
+        <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20">
+          <CardContent className="p-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-white/20 rounded"></div>
+              <div className="h-4 bg-white/20 rounded w-3/4"></div>
+              <div className="space-y-3">
+                <div className="h-10 bg-white/20 rounded"></div>
+                <div className="h-10 bg-white/20 rounded"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      }
+    >
+      <ResetPasswordFormContent />
+    </Suspense>
   )
 }

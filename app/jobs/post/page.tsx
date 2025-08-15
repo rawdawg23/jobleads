@@ -40,6 +40,9 @@ interface VehicleData {
   }
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function PostJobPage() {
   const { user, loading, isCustomer } = useAuth()
   const router = useRouter()

@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, RefreshCw, Globe, Shield, NetworkIcon as Dns } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function DomainAutoSyncPage() {
   const [domains, setDomains] = useState([])
   const [loading, setLoading] = useState(false)

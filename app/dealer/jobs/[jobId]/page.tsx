@@ -33,6 +33,9 @@ interface JobDetails {
   }
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function JobDetailsPage() {
   const { user, loading, isDealer } = useAuth()
   const router = useRouter()

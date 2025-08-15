@@ -14,6 +14,9 @@ import { Wrench, Building, CreditCard, Loader2, CheckCircle, AlertCircle } from 
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function DealerRegisterPage() {
   const { user, loading, isDealer } = useAuth()
   const router = useRouter()

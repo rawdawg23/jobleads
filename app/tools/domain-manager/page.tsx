@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Loader2, Globe, Shield, NetworkIcon as Dns, Plus, RefreshCw } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 interface Domain {
   id: string
   domain_name: string

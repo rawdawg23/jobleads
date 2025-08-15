@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Copy, Shuffle, Sparkles } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 interface DomainSuggestion {
   name: string
   tld: string

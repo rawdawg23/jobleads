@@ -31,6 +31,9 @@ interface Dealer {
   tools: string[]
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function DealersPage() {
   const { user, loading, isCustomer } = useAuth()
   const router = useRouter()

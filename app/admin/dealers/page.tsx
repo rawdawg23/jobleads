@@ -33,6 +33,9 @@ interface Dealer {
   }
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function AdminDealersPage() {
   const { user, loading, isAdmin } = useAuth()
   const router = useRouter()

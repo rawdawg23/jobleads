@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, Suspense } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { EnhancedRedirectSystem } from "@/lib/enhanced-redirect"
@@ -16,14 +16,10 @@ interface RedirectContextType {
 
 const RedirectContext = createContext<RedirectContextType | undefined>(undefined)
 
-export function EnhancedRedirectProvider({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
+function RedirectHandler({ user, loading, pathname, router }: any) {
   const searchParams = useSearchParams()
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [redirectReason, setRedirectReason] = useState<string | null>(null)
-  const [redirectHistory, setRedirectHistory] = useState<Array<{ from: string; to: string; timestamp: number }>>([])
 
   useEffect(() => {
     if (loading) return
@@ -34,19 +30,8 @@ export function EnhancedRedirectProvider({ children }: { children: React.ReactNo
     if (redirectUrl && redirectUrl !== pathname) {
       setIsRedirecting(true)
       setRedirectReason("Client-side redirect rule matched")
-
-      // Add to history
-      const historyEntry = {
-        from: pathname,
-        to: redirectUrl,
-        timestamp: Date.now(),
-      }
-      setRedirectHistory((prev) => [...prev.slice(-9), historyEntry])
-
-      // Perform redirect
       router.push(redirectUrl)
 
-      // Reset redirecting state after a delay
       setTimeout(() => {
         setIsRedirecting(false)
         setRedirectReason(null)
@@ -58,12 +43,20 @@ export function EnhancedRedirectProvider({ children }: { children: React.ReactNo
   useEffect(() => {
     const redirectParam = searchParams.get("redirect")
     if (redirectParam && user) {
-      // Validate and perform redirect
       if (EnhancedRedirectSystem.getClientRedirectUrl(user, redirectParam) === null) {
         router.push(redirectParam)
       }
     }
   }, [searchParams, user, router])
+
+  return null
+}
+
+export function EnhancedRedirectProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [redirectHistory, setRedirectHistory] = useState<Array<{ from: string; to: string; timestamp: number }>>([])
 
   const addRedirectRule = (rule: any) => {
     EnhancedRedirectSystem.addRule(rule)
@@ -74,8 +67,8 @@ export function EnhancedRedirectProvider({ children }: { children: React.ReactNo
   }
 
   const value = {
-    isRedirecting,
-    redirectReason,
+    isRedirecting: false,
+    redirectReason: null,
     redirectHistory,
     addRedirectRule,
     removeRedirectRule,
@@ -84,19 +77,9 @@ export function EnhancedRedirectProvider({ children }: { children: React.ReactNo
   return (
     <RedirectContext.Provider value={value}>
       {children}
-      {isRedirecting && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <div>
-                <p className="font-medium">Redirecting...</p>
-                {redirectReason && <p className="text-sm text-gray-600">{redirectReason}</p>}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <RedirectHandler user={user} loading={loading} pathname={pathname} router={router} />
+      </Suspense>
     </RedirectContext.Provider>
   )
 }

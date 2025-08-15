@@ -35,6 +35,9 @@ interface AdminStats {
   systemHealth: number
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function AdminProfilePage() {
   const { user, loading, signOut, isAdmin } = useAuth()
   const router = useRouter()

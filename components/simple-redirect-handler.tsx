@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { redirectManager } from "@/lib/simple-redirect"
 
-export function SimpleRedirectHandler() {
+function RedirectLogic() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -52,4 +52,12 @@ export function SimpleRedirectHandler() {
   }, [user, loading, pathname, searchParams, router])
 
   return null
+}
+
+export function SimpleRedirectHandler() {
+  return (
+    <Suspense fallback={null}>
+      <RedirectLogic />
+    </Suspense>
+  )
 }

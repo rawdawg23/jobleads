@@ -29,6 +29,9 @@ interface Payment {
   bank_transfer_reference: string
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function JobPaymentPage() {
   const { user, loading, isCustomer } = useAuth()
   const router = useRouter()

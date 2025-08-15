@@ -21,6 +21,9 @@ import {
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 interface Analytics {
   totalUsers: number
   totalCustomers: number
