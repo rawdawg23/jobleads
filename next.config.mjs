@@ -9,7 +9,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['@supabase/supabase-js'],
+  serverExternalPackages: [
+    '@supabase/supabase-js',
+    '@supabase/realtime-js',
+    '@supabase/auth-helpers-nextjs',
+    '@supabase/auth-helpers-shared'
+  ],
 }
 
 export default nextConfig

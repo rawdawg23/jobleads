@@ -18,6 +18,7 @@ interface Stats {
 
 export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false)
+  const [isBuildTime, setIsBuildTime] = useState(typeof window === "undefined")
   const { user, loading, isAdmin } = useAuth()
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
@@ -30,10 +31,11 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     setMounted(true)
+    setIsBuildTime(false)
   }, [])
 
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || isBuildTime) return
 
     if (!loading && (!user || !isAdmin)) {
       router.push("/auth/login")
@@ -43,7 +45,7 @@ export default function AdminDashboardPage() {
     if (user && isAdmin) {
       loadStats()
     }
-  }, [user, loading, isAdmin, router, mounted])
+  }, [user, loading, isAdmin, router, mounted, isBuildTime])
 
   const loadStats = async () => {
     try {
@@ -62,7 +64,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (!mounted || loading || loadingStats) {
+  if (!mounted || loading || loadingStats || isBuildTime) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
