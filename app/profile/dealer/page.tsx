@@ -1,6 +1,7 @@
+"use client"
+
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
-;("use client")
 
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"

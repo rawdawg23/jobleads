@@ -1,6 +1,7 @@
+"use client"
+
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
-;("use client")
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
@@ -197,7 +198,7 @@ export default function DealerApplicationsPage() {
                 <CardContent className="text-center py-12">
                   <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">No Pending Applications</h3>
-                  <p className="text-slate-600 mb-4">You don't have any pending job applications.</p>
+                  <p className="text-slate-600">You don't have any pending job applications.</p>
                   <Button asChild>
                     <Link href="/dealer/jobs">Browse Available Jobs</Link>
                   </Button>
