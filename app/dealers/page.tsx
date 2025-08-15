@@ -29,6 +29,8 @@ interface Dealer {
   completedJobs: number
   averageRating: number
   tools: string[]
+  eco_rating: number
+  carbon_neutral: boolean
 }
 
 export const dynamic = "force-dynamic"
@@ -64,33 +66,38 @@ export default function DealersPage() {
     try {
       const supabase = createClient()
       const { data, error } = await supabase
-        .from("dealers")
+        .from("companies")
         .select(`
           *,
-          user:users(
+          users!companies_created_by_fkey(
             first_name,
             last_name,
-            phone
-          ),
-          tools:dealer_tools(
-            tool:tools(
-              name,
-              brand,
-              model
-            )
+            email
           )
         `)
-        .eq("status", "approved")
         .order("created_at", { ascending: false })
 
       if (error) throw error
 
-      // Transform data and add mock stats (in real app, these would come from aggregated queries)
-      const transformedDealers = (data || []).map((dealer) => ({
-        ...dealer,
-        completedJobs: Math.floor(Math.random() * 50) + 5, // Mock data
-        averageRating: 4 + Math.random(), // Mock rating between 4-5
-        tools: dealer.tools?.map((t: any) => `${t.tool.brand} ${t.tool.name}`) || [],
+      const transformedDealers = (data || []).map((company) => ({
+        id: company.id,
+        business_name: company.name,
+        business_address: company.location,
+        business_postcode: company.location?.split(" ").pop() || "N/A",
+        radius_miles: 25, // Default radius
+        status: "approved",
+        certifications: company.sustainability_certifications || [],
+        created_at: company.created_at,
+        user: {
+          first_name: company.users?.first_name || "N/A",
+          last_name: company.users?.last_name || "N/A",
+          phone: "Contact via platform",
+        },
+        completedJobs: Math.floor(Math.random() * 50) + 5,
+        averageRating: 4 + Math.random(),
+        tools: ["Professional ECU Tools", "Diagnostic Equipment"],
+        eco_rating: company.eco_rating || 0,
+        carbon_neutral: company.carbon_neutral || false,
       }))
 
       setDealers(transformedDealers)

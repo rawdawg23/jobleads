@@ -20,23 +20,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
+    const [usersResult, companiesResult, jobsResult, paymentsResult] = await Promise.all([
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "dealer"),
+      supabase.from("companies").select("*", { count: "exact", head: true }),
+      supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "active"),
       supabase
-        .from("jobs")
-        .select("*", { count: "exact", head: true })
-        .in("status", ["open", "accepted", "in_progress"]),
-      supabase.from("payments").select("amount").eq("status", "completed"),
+        .from("payments")
+        .select("amount")
+        .eq("status", "completed")
+        .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
     ])
 
     const monthlyRevenue = paymentsResult.data?.length
-      ? paymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
+      ? paymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0)
       : 0
 
     const stats = {
       totalUsers: usersResult.count || 0,
-      activeDealers: dealersResult.count || 0,
+      activeDealers: companiesResult.count || 0,
       activeJobs: jobsResult.count || 0,
       monthlyRevenue,
     }

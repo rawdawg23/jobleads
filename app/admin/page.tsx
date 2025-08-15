@@ -8,6 +8,7 @@ import { CreditCard, Users, Wrench, Settings, BarChart3, Shield } from "lucide-r
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
+import { createClient } from "@/lib/supabase/client"
 
 interface Stats {
   totalUsers: number
@@ -52,16 +53,36 @@ export default function AdminDashboardPage() {
 
   const loadStats = async () => {
     try {
-      const response = await fetch("/api/admin/stats", {
-        credentials: "include",
-      })
+      const supabase = createClient()
 
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data.stats)
-      }
+      const [usersResult, companiesResult, jobsResult] = await Promise.all([
+        supabase.from("users").select("id", { count: "exact", head: true }),
+        supabase.from("companies").select("id", { count: "exact", head: true }),
+        supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "active"),
+      ])
+
+      const { data: paymentsData } = await supabase
+        .from("payments")
+        .select("amount")
+        .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+        .eq("status", "completed")
+
+      const monthlyRevenue = paymentsData?.reduce((sum, payment) => sum + payment.amount, 0) || 0
+
+      setStats({
+        totalUsers: usersResult.count || 0,
+        activeDealers: companiesResult.count || 0,
+        activeJobs: jobsResult.count || 0,
+        monthlyRevenue,
+      })
     } catch (error) {
       console.error("Error loading admin stats:", error)
+      setStats({
+        totalUsers: 0,
+        activeDealers: 0,
+        activeJobs: 0,
+        monthlyRevenue: 0,
+      })
     } finally {
       setLoadingStats(false)
     }
