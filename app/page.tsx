@@ -9,8 +9,8 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 relative overflow-hidden">
-      <header className="border-b border-white/20 bg-black/20 backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen glass-grey relative overflow-hidden">
+      <header className="border-b border-white/20 glass-card-grey sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 md:gap-3">
@@ -23,28 +23,19 @@ export default function HomePage() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
-              <Link
-                href="/jobs"
-                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
-              >
+              <Link href="/jobs" className="nav-led-item">
+                <span className="led-green"></span>
                 Browse Jobs
               </Link>
-              <Link
-                href="/dealers"
-                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
-              >
+              <Link href="/dealers" className="nav-led-item">
+                <span className="led-green"></span>
                 Find Dealers
               </Link>
-              <Link
-                href="/auth/login"
-                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
-              >
+              <Link href="/auth/login" className="nav-led-item">
+                <span className="led-red"></span>
                 Sign In
               </Link>
-              <Button
-                asChild
-                className="bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl hover:shadow-2xl transition-all"
-              >
+              <Button asChild className="glass-button">
                 <Link href="/auth/register">Get Started</Link>
               </Button>
             </nav>
@@ -63,30 +54,29 @@ export default function HomePage() {
               <nav className="flex flex-col gap-4">
                 <Link
                   href="/jobs"
-                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  className="nav-led-item py-2 px-4 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <span className="led-green"></span>
                   Browse Jobs
                 </Link>
                 <Link
                   href="/dealers"
-                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  className="nav-led-item py-2 px-4 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <span className="led-green"></span>
                   Find Dealers
                 </Link>
                 <Link
                   href="/auth/login"
-                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  className="nav-led-item py-2 px-4 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <span className="led-red"></span>
                   Sign In
                 </Link>
-                <Button
-                  asChild
-                  className="bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl mt-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Button asChild className="glass-button mt-2" onClick={() => setMobileMenuOpen(false)}>
                   <Link href="/auth/register">Get Started</Link>
                 </Button>
               </nav>
@@ -107,7 +97,7 @@ export default function HomePage() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-12 md:mb-16 items-center">
-              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
+              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
                 <img
                   src="/ecu-remapping-technician.png"
                   alt="Professional ECU Remapping Service"
@@ -120,7 +110,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
+              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
                 <img
                   src="/car-dyno-results.png"
                   alt="Performance Testing and Results"
@@ -232,7 +222,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-8 md:mb-12">
               <Button
                 size="lg"
-                className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-2xl w-full sm:w-auto"
+                className="glass-button text-base md:text-lg px-8 md:px-12 py-3 md:py-4 w-full sm:w-auto"
                 asChild
               >
                 <Link href="/jobs/post" className="flex items-center justify-center gap-3">
@@ -278,7 +268,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 text-white hover:text-yellow-200 shadow-xl w-full sm:w-auto"
+                className="glass-button text-base md:text-lg px-8 md:px-10 py-3 md:py-4 text-white hover:text-yellow-200 shadow-xl w-full sm:w-auto"
                 asChild
               >
                 <Link href="/jobs/post" className="flex items-center justify-center gap-2">
