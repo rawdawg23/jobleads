@@ -41,16 +41,14 @@ export default function HomePage() {
 
   useEffect(() => {
     const dynoInterval = setInterval(() => {
-      if (isDynoRunning) {
-        setDynoValue((prev) => {
-          const variation = Math.random() * 30 - 15
-          return Math.max(180, Math.min(380, prev + variation))
-        })
-        setTorqueValue((prev) => {
-          const variation = Math.random() * 25 - 12
-          return Math.max(250, Math.min(450, prev + variation))
-        })
-      }
+      setDynoValue((prev) => {
+        const variation = Math.random() * 30 - 15
+        return Math.max(180, Math.min(380, prev + variation))
+      })
+      setTorqueValue((prev) => {
+        const variation = Math.random() * 25 - 12
+        return Math.max(250, Math.min(450, prev + variation))
+      })
     }, 300)
 
     const diagnosticInterval = setInterval(() => {
@@ -79,6 +77,11 @@ export default function HomePage() {
       clearInterval(sensorInterval)
       clearInterval(meetInterval)
     }
+  }, [])
+
+  useEffect(() => {
+    // This effect only handles the dyno running state changes
+    // No intervals are created here to prevent infinite loops
   }, [isDynoRunning])
 
   return (
