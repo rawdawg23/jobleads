@@ -1,14 +1,54 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
+import dynamic from "next/dynamic"
+
+const ForgotPasswordForm = dynamic(
+  () => import("@/components/auth/forgot-password-form").then((mod) => ({ default: mod.ForgotPasswordForm })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="glass-card p-8 w-full max-w-md">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-white/20 rounded"></div>
+          <div className="h-4 bg-white/20 rounded w-3/4"></div>
+          <div className="space-y-3">
+            <div className="h-10 bg-white/20 rounded"></div>
+            <div className="h-10 bg-white/20 rounded"></div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+)
 
 export default function ForgotPasswordPage() {
   const [mounted, setMounted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setMounted(true)
+    try {
+      console.log("[v0] ForgotPasswordPage mounting...")
+      setMounted(true)
+    } catch (err) {
+      console.error("[v0] Error mounting forgot password page:", err)
+      setError("Page failed to load")
+    }
   }, [])
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
+        <div className="glass-card p-8 w-full max-w-md text-center">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Page Error</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">
+            Reload Page
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!mounted) {
     return (

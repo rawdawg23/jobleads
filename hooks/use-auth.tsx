@@ -3,8 +3,9 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+
+let createClient: any = null
 
 interface User {
   id: string
@@ -43,25 +44,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
+  const [supabase, setSupabase] = useState<any>(null)
 
   useEffect(() => {
-    setMounted(true)
-    try {
-      const client = createClient()
-      setSupabase(client)
-    } catch (error) {
-      console.warn("Failed to create Supabase client:", error)
-      setLoading(false)
+    const initializeClient = async () => {
+      try {
+        setMounted(true)
+        console.log("[v0] AuthProvider mounting...")
+
+        if (!createClient) {
+          const { createClient: importedCreateClient } = await import("@/lib/supabase/client")
+          createClient = importedCreateClient
+        }
+
+        const client = createClient()
+        setSupabase(client)
+        console.log("[v0] Supabase client created successfully")
+      } catch (error) {
+        console.error("[v0] Failed to create Supabase client:", error)
+        setError("Authentication service unavailable")
+        setLoading(false)
+      }
     }
+
+    initializeClient()
   }, [])
 
   useEffect(() => {
-    if (!mounted || !supabase) return
+    if (!mounted || !supabase || error) return
 
     const initializeAuth = async () => {
       try {
+        console.log("[v0] Initializing auth...")
         const {
           data: { session },
         } = await supabase.auth.getSession()
@@ -74,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log("[v0] Auth state change:", event)
           if (event === "SIGNED_IN" && session?.user) {
             await loadUserProfile(session.user)
           } else if (event === "SIGNED_OUT") {
@@ -83,14 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return () => subscription.unsubscribe()
       } catch (error) {
-        console.warn("Auth initialization error:", error)
+        console.error("[v0] Auth initialization error:", error)
+        setError("Authentication initialization failed")
       } finally {
         setLoading(false)
       }
     }
 
     initializeAuth()
-  }, [mounted, supabase])
+  }, [mounted, supabase, error])
 
   useEffect(() => {
     if (!mounted || !user || !supabase) return
@@ -134,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return
 
     try {
+      console.log("[v0] Loading user profile for:", authUser.id)
       // Get user profile from users table
       const { data: profile } = await supabase.from("users").select("*").eq("id", authUser.id).single()
 
@@ -149,8 +168,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(userData)
+      console.log("[v0] User profile loaded successfully")
     } catch (error) {
-      console.error("Error loading user profile:", error)
+      console.error("[v0] Error loading user profile:", error)
     }
   }
 
@@ -239,8 +259,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
+        <div className="glass-card p-8 text-center">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Authentication Unavailable</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!mounted || !supabase) {
-    return null
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center">
+        <div className="glass-card p-8">
+          <div className="animate-pulse text-center">
+            <div className="h-6 bg-white/20 rounded mb-4"></div>
+            <div className="h-4 bg-white/20 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const value = {
