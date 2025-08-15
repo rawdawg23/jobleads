@@ -47,7 +47,7 @@ export async function signIn(prevState: any, formData: FormData) {
         redirect("/dashboard")
     }
   } catch (error) {
-    console.error("Login error:", error)
+    console.error("Login action error:", error instanceof Error ? error.message : String(error))
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
@@ -114,7 +114,7 @@ export async function signUp(prevState: any, formData: FormData) {
         redirect("/dashboard")
     }
   } catch (error) {
-    console.error("Sign up error:", error)
+    console.error("Sign up action error:", error instanceof Error ? error.message : String(error))
     return { error: "An unexpected error occurred. Please try again." }
   }
 }

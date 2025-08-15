@@ -54,55 +54,75 @@ export class UserModel {
       updatedAt: now,
     }
 
-    const passwordHash = await WebCrypto.hash(password, 12)
+    try {
+      const passwordHash = await WebCrypto.hash(password, 12)
 
-    // Store user data
-    await redisClient.set(RedisKeys.user(userId), JSON.stringify(user))
+      // Store user data
+      await redisClient.set(RedisKeys.user(userId), JSON.stringify(user))
 
-    // Create email-to-userId mapping
-    await redisClient.set(RedisKeys.userByEmail(userData.email), userId)
+      // Create email-to-userId mapping
+      await redisClient.set(RedisKeys.userByEmail(userData.email), userId)
 
-    // Store credentials
-    await redisClient.set(
-      RedisKeys.userCredentials(userId),
-      JSON.stringify({
-        userId,
-        passwordHash,
-      }),
-    )
+      // Store credentials
+      await redisClient.set(
+        RedisKeys.userCredentials(userId),
+        JSON.stringify({
+          userId,
+          passwordHash,
+        }),
+      )
 
-    return user
+      return user
+    } catch (error) {
+      console.error("UserModel.create error:", error instanceof Error ? error.message : String(error))
+      throw new Error("Failed to create user")
+    }
   }
 
   static async findById(id: string): Promise<User | null> {
     if (!isRedisConfigured) return null
 
-    const userData = await redisClient.get(RedisKeys.user(id))
-    return userData ? JSON.parse(userData as string) : null
+    try {
+      const userData = await redisClient.get(RedisKeys.user(id))
+      return userData ? JSON.parse(userData as string) : null
+    } catch (error) {
+      console.error("UserModel.findById error:", error instanceof Error ? error.message : String(error))
+      return null
+    }
   }
 
   static async findByEmail(email: string): Promise<User | null> {
     if (!isRedisConfigured) return null
 
-    const userId = await redisClient.get(RedisKeys.userByEmail(email))
-    if (!userId) return null
+    try {
+      const userId = await redisClient.get(RedisKeys.userByEmail(email))
+      if (!userId) return null
 
-    return this.findById(userId as string)
+      return this.findById(userId as string)
+    } catch (error) {
+      console.error("UserModel.findByEmail error:", error instanceof Error ? error.message : String(error))
+      return null
+    }
   }
 
   static async verifyPassword(email: string, password: string): Promise<User | null> {
     if (!isRedisConfigured) return null
 
-    const user = await this.findByEmail(email)
-    if (!user) return null
+    try {
+      const user = await this.findByEmail(email)
+      if (!user) return null
 
-    const credentialsData = await redisClient.get(RedisKeys.userCredentials(user.id))
-    if (!credentialsData) return null
+      const credentialsData = await redisClient.get(RedisKeys.userCredentials(user.id))
+      if (!credentialsData) return null
 
-    const credentials: UserCredentials = JSON.parse(credentialsData as string)
-    const isValid = await WebCrypto.compare(password, credentials.passwordHash)
+      const credentials: UserCredentials = JSON.parse(credentialsData as string)
+      const isValid = await WebCrypto.compare(password, credentials.passwordHash)
 
-    return isValid ? user : null
+      return isValid ? user : null
+    } catch (error) {
+      console.error("UserModel.verifyPassword error:", error instanceof Error ? error.message : String(error))
+      return null
+    }
   }
 
   static async update(id: string, updates: Partial<Omit<User, "id" | "createdAt">>): Promise<User | null> {
@@ -137,31 +157,41 @@ export class SessionModel {
 
     if (!isRedisConfigured) return session
 
-    // Store session with TTL
-    const ttlSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
-    await redisClient.setex(RedisKeys.session(sessionId), ttlSeconds, JSON.stringify(session))
+    try {
+      // Store session with TTL
+      const ttlSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
+      await redisClient.setex(RedisKeys.session(sessionId), ttlSeconds, JSON.stringify(session))
 
-    // Add to user's session list
-    await redisClient.sadd(RedisKeys.userSessions(userId), sessionId)
+      // Add to user's session list
+      await redisClient.sadd(RedisKeys.userSessions(userId), sessionId)
 
-    return session
+      return session
+    } catch (error) {
+      console.error("SessionModel.create error:", error instanceof Error ? error.message : String(error))
+      throw new Error("Failed to create session")
+    }
   }
 
   static async findById(sessionId: string): Promise<Session | null> {
     if (!isRedisConfigured) return null
 
-    const sessionData = await redisClient.get(RedisKeys.session(sessionId))
-    if (!sessionData) return null
+    try {
+      const sessionData = await redisClient.get(RedisKeys.session(sessionId))
+      if (!sessionData) return null
 
-    const session: Session = JSON.parse(sessionData as string)
+      const session: Session = JSON.parse(sessionData as string)
 
-    // Check if session is expired
-    if (new Date(session.expiresAt) < new Date()) {
-      await this.delete(sessionId)
+      // Check if session is expired
+      if (new Date(session.expiresAt) < new Date()) {
+        await this.delete(sessionId)
+        return null
+      }
+
+      return session
+    } catch (error) {
+      console.error("SessionModel.findById error:", error instanceof Error ? error.message : String(error))
       return null
     }
-
-    return session
   }
 
   static async delete(sessionId: string): Promise<void> {

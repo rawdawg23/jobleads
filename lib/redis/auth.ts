@@ -30,7 +30,7 @@ export class AuthService {
 
       return { user, session }
     } catch (error) {
-      console.error("SignUp error:", error)
+      console.error("SignUp error:", error instanceof Error ? error.message : String(error))
       return { error: "Failed to create user account" }
     }
   }
@@ -48,7 +48,7 @@ export class AuthService {
 
       return { user, session }
     } catch (error) {
-      console.error("SignIn error:", error)
+      console.error("SignIn error:", error instanceof Error ? error.message : String(error))
       return { error: "Failed to sign in" }
     }
   }
@@ -59,7 +59,7 @@ export class AuthService {
         await SessionModel.delete(sessionId)
       }
     } catch (error) {
-      console.error("SignOut error:", error)
+      console.error("SignOut error:", error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -78,7 +78,7 @@ export class AuthService {
 
       return { user, session }
     } catch (error) {
-      console.error("getCurrentUser error:", error)
+      console.error("getCurrentUser error:", error instanceof Error ? error.message : String(error))
       return null
     }
   }
@@ -87,7 +87,7 @@ export class AuthService {
     try {
       return await SessionModel.refresh(sessionId, this.SESSION_DURATION_HOURS)
     } catch (error) {
-      console.error("refreshSession error:", error)
+      console.error("refreshSession error:", error instanceof Error ? error.message : String(error))
       return null
     }
   }
