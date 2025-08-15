@@ -1,43 +1,44 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { redisClient, isRedisConfigured } from "@/lib/redis/client"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
-    if (!isRedisConfigured) {
-      return NextResponse.json({
-        stats: {
-          totalUsers: 0,
-          activeDealers: 0,
-          activeJobs: 0,
-          monthlyRevenue: 0,
-        },
-      })
+    const supabase = createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Check if user is authenticated and is admin
-    const result = await AuthService.getCurrentUser()
+    // Get user profile to check role
+    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-    if (!result || result.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!profile || profile.role !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    // Get basic stats from Redis
-    const userKeys = await redisClient.keys("user:*")
-    const users = []
+    const [usersResult, dealersResult, jobsResult, paymentsResult] = await Promise.all([
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "dealer"),
+      supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["open", "accepted", "in_progress"]),
+      supabase.from("payments").select("amount").eq("status", "completed"),
+    ])
 
-    for (const key of userKeys) {
-      const userData = await redisClient.get(key)
-      if (userData) {
-        users.push(JSON.parse(userData as string))
-      }
-    }
+    const monthlyRevenue = paymentsResult.data?.length
+      ? paymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
+      : 0
 
     const stats = {
-      totalUsers: users.length,
-      activeDealers: users.filter((u) => u.role === "dealer").length,
-      activeJobs: 0, // TODO: Implement job counting when jobs are migrated to Redis
-      monthlyRevenue: 0, // TODO: Implement revenue tracking when payments are migrated to Redis
+      totalUsers: usersResult.count || 0,
+      activeDealers: dealersResult.count || 0,
+      activeJobs: jobsResult.count || 0,
+      monthlyRevenue,
     }
 
     return NextResponse.json({ stats })

@@ -1,29 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { SessionModel, UserModel } from "@/lib/redis/models"
 import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
-    // Get session from cookies
-    const sessionId = request.cookies.get("ctek-session")?.value
+    const supabase = createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-    if (!sessionId) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Validate session and get user
-    const session = await SessionModel.findById(sessionId)
-    if (!session) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
+    // Get user profile to check role
+    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-    const user = await UserModel.findById(session.userId)
-    if (!user || user.role !== "admin") {
+    if (!profile || profile.role !== "admin") {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    // Get Supabase client
-    const supabase = createClient()
+    // Get analytics data from Supabase
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
