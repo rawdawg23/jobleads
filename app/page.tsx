@@ -10,11 +10,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 relative overflow-hidden">
-      <header className="border-b border-white/20 glass-grey sticky top-0 z-50 backdrop-blur-md">
+      <header className="border-b border-white/20 bg-black/20 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 md:gap-3">
-              <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg glass-button">
+              <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
                 <Car className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
               <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-yellow-300 to-amber-300 bg-clip-text text-transparent">
@@ -25,31 +25,25 @@ export default function HomePage() {
             <nav className="hidden md:flex items-center gap-8">
               <Link
                 href="/jobs"
-                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
               >
-                <span className="led-green"></span>
                 Browse Jobs
-                <span className="led-red"></span>
               </Link>
               <Link
                 href="/dealers"
-                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
               >
-                <span className="led-green"></span>
                 Find Dealers
-                <span className="led-red"></span>
               </Link>
               <Link
                 href="/auth/login"
-                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+                className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
               >
-                <span className="led-green"></span>
                 Sign In
-                <span className="led-red"></span>
               </Link>
               <Button
                 asChild
-                className="glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl"
+                className="bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl hover:shadow-2xl transition-all"
               >
                 <Link href="/auth/register">Get Started</Link>
               </Button>
@@ -90,7 +84,7 @@ export default function HomePage() {
                 </Link>
                 <Button
                   asChild
-                  className="glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl mt-2"
+                  className="bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl mt-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Link href="/auth/register">Get Started</Link>
@@ -113,7 +107,7 @@ export default function HomePage() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-12 md:mb-16 items-center">
-              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20">
+              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
                 <img
                   src="/ecu-remapping-technician.png"
                   alt="Professional ECU Remapping Service"
@@ -126,7 +120,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20">
+              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all">
                 <img
                   src="/car-dyno-results.png"
                   alt="Performance Testing and Results"
@@ -141,7 +135,7 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
-              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
                 <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
                   <div className="h-24 md:h-32 bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                     <Zap className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
@@ -164,7 +158,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
                 <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
                   <div className="h-24 md:h-32 bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
                     <Settings className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
@@ -187,7 +181,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="bg-white/10 backdrop-blur-sm p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
                 <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
                   <div className="h-24 md:h-32 bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
                     <TrendingUp className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
@@ -212,21 +206,21 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 justify-center mb-8 md:mb-12">
-              <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <div className="flex items-center justify-center gap-3 bg-white/10 backdrop-blur-sm p-3 md:p-4 rounded-xl border border-white/10">
                 <Shield className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-bold text-white text-sm md:text-base">Fully Insured</div>
                   <div className="text-xs md:text-sm text-white/70">£2M Public Liability</div>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <div className="flex items-center justify-center gap-3 bg-white/10 backdrop-blur-sm p-3 md:p-4 rounded-xl border border-white/10">
                 <Award className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-bold text-white text-sm md:text-base">Certified Specialists</div>
                   <div className="text-xs md:text-sm text-white/70">IMI Qualified Technicians</div>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <div className="flex items-center justify-center gap-3 bg-white/10 backdrop-blur-sm p-3 md:p-4 rounded-xl border border-white/10">
                 <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
                 <div className="text-left">
                   <div className="font-bold text-white text-sm md:text-base">Same Day Service</div>
@@ -238,7 +232,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-8 md:mb-12">
               <Button
                 size="lg"
-                className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-2xl w-full sm:w-auto"
+                className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-2xl w-full sm:w-auto"
                 asChild
               >
                 <Link href="/jobs/post" className="flex items-center justify-center gap-3">
@@ -249,7 +243,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 glass-button border-2 border-yellow-400/60 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
+                className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 border-2 border-yellow-400/60 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
                 asChild
               >
                 <Link href="/dealers/register" className="flex items-center justify-center gap-3">
@@ -261,7 +255,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-16 md:py-24 px-4 md:px-6 glass-card-grey border-y border-white/20 text-white relative">
+        <section className="py-16 md:py-24 px-4 md:px-6 bg-white/5 backdrop-blur-sm border-y border-white/20 text-white relative">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 backdrop-blur-md"></div>
           <div className="container mx-auto text-center max-w-4xl relative z-10">
             <div className="mb-8 md:mb-12">
@@ -284,7 +278,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 glass-button text-white hover:text-yellow-200 shadow-xl w-full sm:w-auto"
+                className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 text-white hover:text-yellow-200 shadow-xl w-full sm:w-auto"
                 asChild
               >
                 <Link href="/jobs/post" className="flex items-center justify-center gap-2">
@@ -295,7 +289,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 glass-button border-2 border-yellow-400/40 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
+                className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 border-2 border-yellow-400/40 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
                 asChild
               >
                 <Link href="/dealers/register" className="flex items-center justify-center gap-2">
@@ -308,12 +302,12 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="glass-grey border-t border-white/20 py-12 md:py-16 px-4 md:px-6 relative z-10">
+      <footer className="bg-black/20 backdrop-blur-md border-t border-white/20 py-12 md:py-16 px-4 md:px-6 relative z-10">
         <div className="container mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8 mb-8 md:mb-12">
             <div className="md:col-span-2">
               <Link href="/" className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-                <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg glass-button">
+                <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
                   <Car className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
                 <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-yellow-300 to-amber-300 bg-clip-text text-transparent">
