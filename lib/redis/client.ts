@@ -7,17 +7,50 @@ export const isRedisConfigured =
   process.env.KV_REST_API_TOKEN.length > 0
 
 const dummyClient = {
-  get: async () => null,
-  set: async () => "OK",
-  setex: async () => "OK",
-  del: async () => 0,
-  sadd: async () => 0,
-  srem: async () => 0,
-  smembers: async () => [],
-  keys: async () => [],
-  exists: async () => 0,
-  incr: async () => 1,
-  expire: async () => 1,
+  get: async (key: string) => {
+    console.warn(`Redis not configured: attempted GET ${key}`)
+    return null
+  },
+  set: async (key: string, value: any) => {
+    console.warn(`Redis not configured: attempted SET ${key}`)
+    return "OK"
+  },
+  setex: async (key: string, seconds: number, value: any) => {
+    console.warn(`Redis not configured: attempted SETEX ${key}`)
+    return "OK"
+  },
+  del: async (key: string) => {
+    console.warn(`Redis not configured: attempted DEL ${key}`)
+    return 0
+  },
+  sadd: async (key: string, ...members: any[]) => {
+    console.warn(`Redis not configured: attempted SADD ${key}`)
+    return 0
+  },
+  srem: async (key: string, ...members: any[]) => {
+    console.warn(`Redis not configured: attempted SREM ${key}`)
+    return 0
+  },
+  smembers: async (key: string) => {
+    console.warn(`Redis not configured: attempted SMEMBERS ${key}`)
+    return []
+  },
+  keys: async (pattern: string) => {
+    console.warn(`Redis not configured: attempted KEYS ${pattern}`)
+    return []
+  },
+  exists: async (key: string) => {
+    console.warn(`Redis not configured: attempted EXISTS ${key}`)
+    return 0
+  },
+  incr: async (key: string) => {
+    console.warn(`Redis not configured: attempted INCR ${key}`)
+    return 1
+  },
+  expire: async (key: string, seconds: number) => {
+    console.warn(`Redis not configured: attempted EXPIRE ${key}`)
+    return 1
+  },
 }
 
 let redis: Redis | null = null
@@ -29,10 +62,15 @@ export function createRedisClient(): Redis | typeof dummyClient {
       return dummyClient as any
     }
 
-    redis = new Redis({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
-    })
+    try {
+      redis = new Redis({
+        url: process.env.KV_REST_API_URL!,
+        token: process.env.KV_REST_API_TOKEN!,
+      })
+    } catch (error) {
+      console.error("Failed to create Redis client:", error)
+      return dummyClient as any
+    }
   }
 
   return redis

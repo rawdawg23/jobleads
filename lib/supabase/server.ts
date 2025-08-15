@@ -17,8 +17,8 @@ export const createClient = cache(() => {
       auth: {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-        signInWithPassword: () => Promise.resolve({ error: { message: "Supabase not configured" } }),
-        signUp: () => Promise.resolve({ error: { message: "Supabase not configured" } }),
+        signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
+        signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signOut: () => Promise.resolve({ error: null }),
       },
       from: (table: string) => ({
@@ -26,10 +26,18 @@ export const createClient = cache(() => {
           eq: (column: string, value: any) => ({
             single: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
           }),
+          order: (column: string, options?: any) => ({
+            limit: (count: number) => Promise.resolve({ data: [], error: null }),
+          }),
         }),
-        insert: (data: any) => Promise.resolve({ error: { message: "Supabase not configured" } }),
+        insert: (data: any) => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         update: (data: any) => ({
-          eq: (column: string, value: any) => Promise.resolve({ error: { message: "Supabase not configured" } }),
+          eq: (column: string, value: any) =>
+            Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
+        }),
+        delete: () => ({
+          eq: (column: string, value: any) =>
+            Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         }),
       }),
     } as any

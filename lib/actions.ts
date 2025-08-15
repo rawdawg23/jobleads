@@ -153,21 +153,40 @@ export async function requestPasswordReset(prevState: any, formData: FormData) {
   }
 
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error("[v0] Missing RESEND_API_KEY environment variable")
+      return { error: "Email service is not configured. Please contact support." }
+    }
+
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000"
+
+    console.log("[v0] Using site URL:", siteUrl)
+
     // Find user by email
     const user = await UserModel.findByEmail(email.toString())
+    console.log("[v0] User lookup result:", user ? "found" : "not found")
 
     // Always return success to prevent email enumeration attacks
     // But only send email if user exists
     if (user) {
       // Create password reset token
+      console.log("[v0] Creating password reset token for user:", user.id)
       const resetToken = await PasswordResetModel.create(user.id, user.email, 1) // 1 hour expiry
+      console.log("[v0] Reset token created:", resetToken.id)
 
       // Create reset URL
-      const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${resetToken.id}`
+      const resetUrl = `${siteUrl}/auth/reset-password?token=${resetToken.id}`
+      console.log("[v0] Reset URL:", resetUrl)
+
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"
+      console.log("[v0] Sending email from:", fromEmail)
 
       // Send password reset email
-      await resend.emails.send({
-        from: "CTEK Job Leads <noreply@ctekjobleads.com>",
+      const emailResult = await resend.emails.send({
+        from: fromEmail,
         to: [user.email],
         subject: "Reset Your CTEK Job Leads Password",
         html: `
@@ -185,11 +204,19 @@ export async function requestPasswordReset(prevState: any, formData: FormData) {
           </div>
         `,
       })
+
+      console.log("[v0] Email send result:", emailResult.data ? "success" : "failed", emailResult.error || "")
+
+      if (emailResult.error) {
+        console.error("[v0] Email send error:", emailResult.error)
+        return { error: "Failed to send reset email. Please try again or contact support." }
+      }
     }
 
     return { success: true }
   } catch (error) {
-    console.error("Password reset request error:", error instanceof Error ? error.message : String(error))
+    console.error("[v0] Password reset request error:", error instanceof Error ? error.message : String(error))
+    console.error("[v0] Full error object:", error)
     return { error: "An unexpected error occurred. Please try again." }
   }
 }
