@@ -3,8 +3,12 @@
 import { AuthService } from "@/lib/redis/auth"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
+import { isRedisConfigured } from "@/lib/redis/client"
 
 export async function signIn(prevState: any, formData: FormData) {
+  // Log configuration status for debugging
+  console.log("SignIn action - Redis configured:", isRedisConfigured)
+  
   if (!formData) {
     return { error: "Form data is missing" }
   }
@@ -17,13 +21,18 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 
   try {
+    console.log("Attempting to sign in with email:", email.toString())
+    
     const result = await AuthService.signIn(email.toString(), password.toString())
+    console.log("AuthService result:", result)
 
     if ("error" in result) {
+      console.log("Sign in error:", result.error)
       return { error: result.error }
     }
 
     const { user, session } = result
+    console.log("Sign in successful for user:", user.email)
 
     // Set session cookie
     const cookieStore = cookies()
@@ -48,6 +57,10 @@ export async function signIn(prevState: any, formData: FormData) {
     }
   } catch (error) {
     console.error("Login error:", error)
+    // Provide more specific error information
+    if (error instanceof Error) {
+      return { error: error.message }
+    }
     return { error: "An unexpected error occurred. Please try again." }
   }
 }

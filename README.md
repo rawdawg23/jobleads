@@ -1,30 +1,45 @@
-# eco remap job
+# CTEK JOB LEADS
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+A job board platform connecting customers with dealers for automotive services.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/rawdawg23s-projects/v0-eco-remap-job)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/Z6VJdsRFGHu)
+## Authentication Setup
 
-## Overview
+This application uses Redis for authentication. To enable authentication, you need to set the following environment variables:
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+### Required Environment Variables
 
-## Deployment
+```bash
+# Redis Configuration (Upstash KV)
+KV_REST_API_URL=your_redis_url_here
+KV_REST_API_TOKEN=your_redis_token_here
+```
 
-Your project is live at:
+### Setting up Upstash Redis
 
-**[https://vercel.com/rawdawg23s-projects/v0-eco-remap-job](https://vercel.com/rawdawg23s-projects/v0-eco-remap-job)**
+1. Go to [Upstash](https://upstash.com/) and create an account
+2. Create a new Redis database
+3. Copy the `REST API URL` and `REST API Token` from your database
+4. Add these to your `.env.local` file:
 
-## Build your app
+```bash
+KV_REST_API_URL=https://your-database-url.upstash.io
+KV_REST_API_TOKEN=your_token_here
+```
 
-Continue building your app on:
+### Without Redis Configuration
 
-**[https://v0.app/chat/projects/Z6VJdsRFGHu](https://v0.app/chat/projects/Z6VJdsRFGHu)**
+If Redis is not configured, the application will show an error message: "Authentication service is not configured. Please contact support."
 
-## How It Works
+## Development
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+```bash
+npm install
+npm run dev
+```
+
+## Production
+
+```bash
+npm run build
+npm start
+```

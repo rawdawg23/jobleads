@@ -77,32 +77,70 @@ export class UserModel {
   static async findById(id: string): Promise<User | null> {
     if (!isRedisConfigured) return null
 
-    const userData = await redisClient.get(RedisKeys.user(id))
-    return userData ? JSON.parse(userData as string) : null
+    try {
+      const userData = await redisClient.get(RedisKeys.user(id))
+      if (!userData) return null
+
+      // Ensure userData is a string before parsing
+      if (typeof userData !== 'string') {
+        console.error("Invalid user data type:", typeof userData)
+        return null
+      }
+
+      return JSON.parse(userData)
+    } catch (error) {
+      console.error("Error finding user by ID:", error)
+      return null
+    }
   }
 
   static async findByEmail(email: string): Promise<User | null> {
     if (!isRedisConfigured) return null
 
-    const userId = await redisClient.get(RedisKeys.userByEmail(email))
-    if (!userId) return null
+    try {
+      const userId = await redisClient.get(RedisKeys.userByEmail(email))
+      if (!userId) return null
 
-    return this.findById(userId as string)
+      // Ensure userId is a string
+      if (typeof userId !== 'string') {
+        console.error("Invalid userId type:", typeof userId)
+        return null
+      }
+
+      return this.findById(userId)
+    } catch (error) {
+      console.error("Error finding user by email:", error)
+      return null
+    }
   }
 
   static async verifyPassword(email: string, password: string): Promise<User | null> {
-    if (!isRedisConfigured) return null
+    if (!isRedisConfigured) {
+      console.warn("Redis is not configured, cannot verify password")
+      return null
+    }
 
-    const user = await this.findByEmail(email)
-    if (!user) return null
+    try {
+      const user = await this.findByEmail(email)
+      if (!user) return null
 
-    const credentialsData = await redisClient.get(RedisKeys.userCredentials(user.id))
-    if (!credentialsData) return null
+      const credentialsData = await redisClient.get(RedisKeys.userCredentials(user.id))
+      if (!credentialsData) return null
 
-    const credentials: UserCredentials = JSON.parse(credentialsData as string)
-    const isValid = await WebCrypto.compare(password, credentials.passwordHash)
+      // Ensure credentialsData is a string before parsing
+      if (typeof credentialsData !== 'string') {
+        console.error("Invalid credentials data type:", typeof credentialsData)
+        return null
+      }
 
-    return isValid ? user : null
+      const credentials: UserCredentials = JSON.parse(credentialsData)
+      const isValid = await WebCrypto.compare(password, credentials.passwordHash)
+
+      return isValid ? user : null
+    } catch (error) {
+      console.error("Error verifying password:", error)
+      return null
+    }
   }
 
   static async update(id: string, updates: Partial<Omit<User, "id" | "createdAt">>): Promise<User | null> {
@@ -150,18 +188,29 @@ export class SessionModel {
   static async findById(sessionId: string): Promise<Session | null> {
     if (!isRedisConfigured) return null
 
-    const sessionData = await redisClient.get(RedisKeys.session(sessionId))
-    if (!sessionData) return null
+    try {
+      const sessionData = await redisClient.get(RedisKeys.session(sessionId))
+      if (!sessionData) return null
 
-    const session: Session = JSON.parse(sessionData as string)
+      // Ensure sessionData is a string before parsing
+      if (typeof sessionData !== 'string') {
+        console.error("Invalid session data type:", typeof sessionData)
+        return null
+      }
 
-    // Check if session is expired
-    if (new Date(session.expiresAt) < new Date()) {
-      await this.delete(sessionId)
+      const session: Session = JSON.parse(sessionData)
+
+      // Check if session is expired
+      if (new Date(session.expiresAt) < new Date()) {
+        await this.delete(sessionId)
+        return null
+      }
+
+      return session
+    } catch (error) {
+      console.error("Error finding session by ID:", error)
       return null
     }
-
-    return session
   }
 
   static async delete(sessionId: string): Promise<void> {
