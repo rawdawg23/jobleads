@@ -9,10 +9,17 @@ interface RoleGuardProps {
   allowedRoles: string[]
   fallback?: React.ReactNode
   showForGuests?: boolean
+  requiresPremium?: boolean
 }
 
-export function RoleGuard({ children, allowedRoles, fallback = null, showForGuests = false }: RoleGuardProps) {
-  const { user, loading } = useAuth()
+export function RoleGuard({
+  children,
+  allowedRoles,
+  fallback = null,
+  showForGuests = false,
+  requiresPremium = false,
+}: RoleGuardProps) {
+  const { user, loading, hasPremiumAccess } = useAuth()
 
   if (loading) {
     return null
@@ -30,6 +37,10 @@ export function RoleGuard({ children, allowedRoles, fallback = null, showForGues
 
   // Check if user role is allowed
   if (!allowedRoles.includes(user.role)) {
+    return <>{fallback}</>
+  }
+
+  if (requiresPremium && !hasPremiumAccess) {
     return <>{fallback}</>
   }
 

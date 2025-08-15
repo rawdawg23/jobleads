@@ -20,6 +20,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
+  hasPremiumAccess: boolean
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (
     email: string,
@@ -35,6 +36,7 @@ interface AuthContextType {
   isCustomer: boolean
   isDealer: boolean
   isAdmin: boolean
+  refreshPremiumStatus: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -42,6 +44,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasPremiumAccess, setHasPremiumAccess] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await loadUserProfile(globalState.session.user)
         } else if (!globalState.session?.user) {
           setUser(null)
+          setHasPremiumAccess(false)
         }
       })
 
@@ -87,9 +91,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(userData)
+      await checkPremiumStatus(authUser.id)
       console.log("[v0] User profile loaded successfully")
     } catch (error) {
       console.error("[v0] Error loading user profile:", error)
+    }
+  }
+
+  const checkPremiumStatus = async (userId: string) => {
+    try {
+      const response = await fetch("/api/user/premium-status")
+      if (response.ok) {
+        const data = await response.json()
+        setHasPremiumAccess(data.hasPremiumAccess)
+      }
+    } catch (error) {
+      console.error("Error checking premium status:", error)
+      setHasPremiumAccess(false)
+    }
+  }
+
+  const refreshPremiumStatus = async () => {
+    if (user) {
+      await checkPremiumStatus(user.id)
     }
   }
 
@@ -171,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await client.auth.signOut()
       setUser(null)
+      setHasPremiumAccess(false)
       router.push("/")
     } catch (error) {
       console.error("Sign out error:", error)
@@ -180,12 +205,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    hasPremiumAccess,
     signIn,
     signUp,
     signOut,
     isCustomer: user?.role === "customer",
     isDealer: user?.role === "dealer",
     isAdmin: user?.role === "admin",
+    refreshPremiumStatus,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

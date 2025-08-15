@@ -29,24 +29,51 @@ function ensureInitialized() {
   }
 
   globalThis.__GLOBAL_AUTH_INITIALIZED__ = true
+  console.log("[v0] Initializing global auth system")
 
   if (!globalSupabase) {
-    globalSupabase = createClient()
-    globalThis.__GLOBAL_SUPABASE_CLIENT__ = globalSupabase
+    try {
+      globalSupabase = createClient()
+      globalThis.__GLOBAL_SUPABASE_CLIENT__ = globalSupabase
+      console.log("[v0] Global Supabase client created")
+    } catch (error) {
+      console.error("[v0] Failed to create Supabase client:", error)
+      globalAuthState.loading = false
+      globalAuthState.initialized = true
+      globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
+      return
+    }
   }
 
   if (globalSupabase && !globalAuthSubscription) {
-    globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
-      globalAuthState.session = session
-      globalAuthState.user = session?.user ?? null
+    try {
+      globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+        console.log("[v0] Global auth state change:", event, session ? "with session" : "no session")
+        globalAuthState.session = session
+        globalAuthState.user = session?.user ?? null
+        globalAuthState.loading = false
+
+        globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
+
+        globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
+      })
+      globalThis.__GLOBAL_AUTH_SUBSCRIPTION__ = globalAuthSubscription
+      console.log("[v0] Global auth subscription created")
+    } catch (error) {
+      console.error("[v0] Failed to create auth subscription:", error)
       globalAuthState.loading = false
-
-      globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
-
-      globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
-    })
-    globalThis.__GLOBAL_AUTH_SUBSCRIPTION__ = globalAuthSubscription
+    }
   }
+
+  setTimeout(() => {
+    if (globalAuthState.loading) {
+      console.log("[v0] Auth loading timeout - setting loading to false")
+      globalAuthState.loading = false
+      globalAuthState.initialized = true
+      globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState
+      globalStateListeners.forEach((listener) => listener({ ...globalAuthState }))
+    }
+  }, 3000) // 3 second timeout
 
   globalAuthState.initialized = true
   globalThis.__GLOBAL_AUTH_STATE__ = globalAuthState

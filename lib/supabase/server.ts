@@ -9,6 +9,8 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
+export { createServerClient }
+
 // Create a cached version of the Supabase client for Server Components
 export const createClient = cache(() => {
   const cookieStore = cookies()
@@ -45,3 +47,37 @@ export const createClient = cache(() => {
     },
   })
 })
+
+export const createServerClientForAPI = () => {
+  const cookieStore = cookies()
+
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase environment variables are not set. Using dummy client.")
+    return {
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
+        }),
+      }),
+    } as any
+  }
+
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        } catch {
+          // Ignore cookie setting errors in API routes
+        }
+      },
+    },
+  })
+}

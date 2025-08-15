@@ -7,6 +7,9 @@ CREATE TYPE user_role AS ENUM ('customer', 'dealer', 'admin');
 CREATE TYPE job_status AS ENUM ('pending', 'accepted', 'in_progress', 'completed', 'cancelled');
 CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'failed', 'refunded');
 CREATE TYPE dealer_status AS ENUM ('pending', 'active', 'suspended', 'cancelled');
+CREATE TYPE car_meet_status AS ENUM ('active', 'cancelled', 'completed');
+CREATE TYPE subscription_type AS ENUM ('basic', 'premium', 'professional');
+CREATE TYPE subscription_status AS ENUM ('active', 'expired', 'cancelled');
 
 -- Users table (profiles for Supabase auth users)
 CREATE TABLE users (
@@ -137,13 +140,17 @@ CREATE TABLE job_applications (
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    stripe_payment_intent_id VARCHAR(255) UNIQUE,
+    stripe_customer_id VARCHAR(255),
     amount DECIMAL(10, 2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'GBP',
-    payment_type VARCHAR(50) NOT NULL, -- 'job_posting', 'dealer_subscription'
+    payment_type VARCHAR(50) NOT NULL, -- 'job_posting', 'dealer_subscription', 'platform_access', 'premium_features', 'event_entry'
     reference_id UUID, -- job_id or dealer_id
     status payment_status DEFAULT 'pending',
     bank_transfer_reference VARCHAR(100),
     admin_notes TEXT,
+    metadata JSONB DEFAULT '{}',
+    expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -171,6 +178,43 @@ CREATE TABLE tracking_updates (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Car meet locations table for the new car meet system
+CREATE TABLE car_meet_locations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    location_name VARCHAR(255) NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    address TEXT NOT NULL,
+    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    event_time TIME NOT NULL,
+    max_attendees INTEGER DEFAULT 50,
+    current_attendees INTEGER DEFAULT 0,
+    entry_fee DECIMAL(10, 2) DEFAULT 0.00,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status car_meet_status DEFAULT 'active',
+    tags TEXT[] DEFAULT '{}',
+    image_url TEXT,
+    contact_info JSONB DEFAULT '{}',
+    requirements TEXT[] DEFAULT '{}'
+);
+
+-- User subscriptions table for premium access management
+CREATE TABLE user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subscription_type subscription_type NOT NULL DEFAULT 'basic',
+    status subscription_status NOT NULL DEFAULT 'active',
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    payment_id UUID REFERENCES payments(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -182,10 +226,24 @@ CREATE INDEX idx_messages_job_id ON messages(job_id);
 CREATE INDEX idx_messages_recipient_id ON messages(recipient_id);
 CREATE INDEX idx_payments_user_id ON payments(user_id);
 CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX idx_payments_stripe_payment_intent ON payments(stripe_payment_intent_id);
+CREATE INDEX idx_payments_payment_type ON payments(payment_type);
+CREATE INDEX idx_car_meet_locations_coordinates ON car_meet_locations USING GIST(ST_Point(longitude, latitude));
+CREATE INDEX idx_car_meet_locations_event_date ON car_meet_locations(event_date);
+CREATE INDEX idx_car_meet_locations_status ON car_meet_locations(status);
+CREATE INDEX idx_car_meet_locations_created_by ON car_meet_locations(created_by);
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX idx_user_subscriptions_status ON user_subscriptions(status);
+CREATE INDEX idx_user_subscriptions_expires_at ON user_subscriptions(expires_at);
 
 -- Create spatial indexes for location-based queries
 CREATE INDEX idx_users_location ON users USING GIST(ST_Point(longitude, latitude));
 CREATE INDEX idx_dealers_location ON dealers USING GIST(ST_Point(business_longitude, business_latitude));
 CREATE INDEX idx_jobs_location ON jobs USING GIST(ST_Point(customer_longitude, customer_latitude));
+
+-- Added unique constraint to prevent duplicate active subscriptions
+CREATE UNIQUE INDEX idx_user_subscriptions_unique_active 
+ON user_subscriptions(user_id) 
+WHERE status = 'active';
 
 -- Additional updates can be added here if necessary
