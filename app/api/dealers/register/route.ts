@@ -1,21 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { DealerModel, PaymentModel } from "@/lib/redis/extended-models"
-import { UserModel } from "@/lib/redis/models"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const result = await AuthService.getCurrentUser()
+    const supabase = await createClient()
 
-    if (!result) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { user } = result
-
-    // Check if user is already a dealer
-    const existingDealer = await DealerModel.findByUserId(user.id)
+    const { data: existingDealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
 
     if (existingDealer) {
       return NextResponse.json({ error: "You are already registered as a dealer" }, { status: 400 })
@@ -43,32 +42,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Create dealer record
-    const dealer = await DealerModel.create({
-      userId: user.id,
-      businessName,
-      businessAddress,
-      businessPostcode: businessPostcode.toUpperCase(),
-      vatNumber: vatNumber || undefined,
-      insuranceDetails,
-      certifications,
-      status: "pending",
-      radiusMiles,
-      tools: selectedTools,
-    })
+    const { data: dealer, error: dealerError } = await supabase
+      .from("dealers")
+      .insert({
+        user_id: user.id,
+        business_name: businessName,
+        business_address: businessAddress,
+        business_postcode: businessPostcode.toUpperCase(),
+        vat_number: vatNumber || null,
+        insurance_details: insuranceDetails,
+        certifications,
+        status: "pending",
+        radius_miles: radiusMiles,
+        tools: selectedTools,
+      })
+      .select()
+      .single()
 
-    // Create payment record for dealer subscription
-    await PaymentModel.create({
-      userId: user.id,
+    if (dealerError) {
+      throw dealerError
+    }
+
+    await supabase.from("payments").insert({
+      user_id: user.id,
       amount: 100.0,
       currency: "GBP",
-      paymentType: "dealer_subscription",
-      referenceId: dealer.id,
+      payment_type: "dealer_subscription",
+      reference_id: dealer.id,
       status: "pending",
     })
 
-    // Update user role to dealer
-    await UserModel.update(user.id, { role: "dealer" })
+    await supabase.from("users").update({ role: "dealer" }).eq("id", user.id)
 
     return NextResponse.json({
       dealerId: dealer.id,

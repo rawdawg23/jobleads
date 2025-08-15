@@ -1,44 +1,56 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { SessionModel, UserModel } from "@/lib/redis/models"
-import { DealerModel, PaymentModel } from "@/lib/redis/extended-models"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest, { params }: { params: { dealerId: string } }) {
   try {
-    const sessionId = request.cookies.get("ctek-session")?.value
+    const supabase = await createClient()
 
-    if (!sessionId) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-    }
-
-    const session = await SessionModel.findById(sessionId)
-    if (!session) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-    }
-
-    const user = await UserModel.findById(session.userId)
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 })
     }
 
     const { dealerId } = params
 
-    const dealer = await DealerModel.findById(dealerId)
-    if (!dealer || dealer.userId !== user.id) {
+    const { data: dealer, error: dealerError } = await supabase
+      .from("dealers")
+      .select("*")
+      .eq("id", dealerId)
+      .eq("user_id", user.id)
+      .single()
+
+    if (dealerError || !dealer) {
       return NextResponse.json({ error: "Dealer not found" }, { status: 404 })
     }
 
-    const userPayments = await PaymentModel.findByUser(user.id)
-    const payment = userPayments.find((p) => p.referenceId === dealerId && p.paymentType === "dealer_subscription")
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("reference_id", dealerId)
+      .eq("payment_type", "dealer_subscription")
+      .single()
 
-    if (!payment) {
+    if (paymentError || !payment) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 })
     }
 
     // Generate bank transfer reference if not exists
     let updatedPayment = payment
-    if (!payment.referenceId.startsWith("DEALER")) {
+    if (!payment.reference_id.startsWith("DEALER")) {
       const reference = `DEALER${dealerId.slice(-8).toUpperCase()}`
-      updatedPayment = (await PaymentModel.update(payment.id, { referenceId: reference })) || payment
+      const { data: updated } = await supabase
+        .from("payments")
+        .update({ reference_id: reference })
+        .eq("id", payment.id)
+        .select()
+        .single()
+
+      updatedPayment = updated || payment
     }
 
     return NextResponse.json({
