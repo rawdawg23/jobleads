@@ -42,6 +42,8 @@ function NotFoundContent() {
 }
 
 export default function NotFound() {
+  console.log("[v0] 404 Not Found page is rendering - this should not happen on homepage")
+
   return (
     <Suspense
       fallback={
