@@ -1,629 +1,426 @@
+"use client"
+
+import dynamic from "next/dynamic"
+import { Suspense, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { MapPin, Clock, Shield, Users, Zap, Car, CheckCircle, Star, ArrowRight, Phone, Mail } from "lucide-react"
+import { Users, Car, ArrowRight, Zap, Settings, TrendingUp, Shield, Award, Clock, Menu, X } from "lucide-react"
 import Link from "next/link"
 
+const HeroSection = dynamic(() => import("@/components/sections/hero-section"), {
+  loading: () => <div className="h-96 bg-gradient-to-br from-slate-50 to-white animate-pulse" />,
+})
+
+const ServicesSection = dynamic(() => import("@/components/sections/services-section"), {
+  loading: () => <div className="h-64 bg-white/40 animate-pulse" />,
+})
+
+const FeaturesSection = dynamic(() => import("@/components/sections/features-section"), {
+  loading: () => <div className="h-64 bg-gradient-to-br from-slate-50/50 to-slate-100/50 animate-pulse" />,
+})
+
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-3xl float-animation"></div>
-        <div
-          className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-secondary/15 to-primary/15 rounded-full blur-3xl float-animation"
-          style={{ animationDelay: "2s" }}
-        ></div>
-        <div
-          className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-3xl float-animation"
-          style={{ animationDelay: "4s" }}
-        ></div>
+        <div className="absolute top-10 left-5 w-48 h-48 md:top-20 md:left-10 md:w-72 md:h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-20 right-10 w-64 h-64 md:top-40 md:right-20 md:w-96 md:h-96 bg-amber-500/15 rounded-full blur-3xl animate-float-delayed"></div>
+        <div className="absolute bottom-10 left-1/2 w-48 h-48 md:bottom-20 md:w-80 md:h-80 bg-yellow-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-1/2 left-1/4 w-32 h-32 md:w-64 md:h-64 bg-amber-400/12 rounded-full blur-3xl animate-float-delayed"></div>
       </div>
 
-      <header className="border-b border-white/20 bg-white/80 backdrop-blur-xl sticky top-0 z-50 shadow-lg">
-        <div className="container mx-auto px-6 py-4">
+      <header className="border-b border-white/20 glass-grey sticky top-0 z-50">
+        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="p-2 bg-gradient-to-br from-primary to-secondary rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300">
-                <Car className="h-6 w-6 text-white" />
+            <Link href="/" className="flex items-center gap-2 md:gap-3">
+              <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg glass-button">
+                <Car className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-yellow-300 to-amber-300 bg-clip-text text-transparent">
                 CTEK JOB LEADS
               </h1>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
-              <Link href="/jobs" className="text-foreground/80 hover:text-primary font-medium transition-colors">
+              <Link
+                href="/jobs"
+                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+              >
+                <span className="led-green"></span>
                 Browse Jobs
+                <span className="led-red"></span>
               </Link>
-              <Link href="/dealers" className="text-foreground/80 hover:text-primary font-medium transition-colors">
+              <Link
+                href="/dealers"
+                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+              >
+                <span className="led-green"></span>
                 Find Dealers
+                <span className="led-red"></span>
               </Link>
-              <Link href="/auth/login" className="text-foreground/80 hover:text-primary font-medium transition-colors">
+              <Link
+                href="/auth/login"
+                className="nav-led-item text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 hover:drop-shadow-lg"
+              >
+                <span className="led-green"></span>
                 Sign In
+                <span className="led-red"></span>
               </Link>
-              <Button asChild className="btn-primary">
+              <Button
+                asChild
+                className="glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl"
+              >
                 <Link href="/auth/register">Get Started</Link>
               </Button>
             </nav>
+
+            <button
+              className="md:hidden p-2 text-white/90 hover:text-yellow-300 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
+
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-white/20 pt-4">
+              <nav className="flex flex-col gap-4">
+                <Link
+                  href="/jobs"
+                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Browse Jobs
+                </Link>
+                <Link
+                  href="/dealers"
+                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Find Dealers
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="text-white/90 hover:text-yellow-300 font-medium transition-all duration-300 py-2 px-4 rounded-lg hover:bg-white/10"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Button
+                  asChild
+                  className="glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-xl mt-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/auth/register">Get Started</Link>
+                </Button>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 
-      <section className="py-24 px-6 relative">
-        <div className="container mx-auto text-center max-w-5xl relative z-10">
-          <div className="flex justify-center items-center mb-6">
-            <Badge
-              variant="secondary"
-              className="px-6 py-3 text-sm font-semibold bg-gradient-to-r from-primary/20 to-secondary/20 text-primary border-0 backdrop-blur-sm shadow-lg"
-            >
-              🚗 Professional ECU Remapping Network
-            </Badge>
-          </div>
-
-          <h2 className="text-6xl font-bold text-foreground mb-8 leading-tight">
-            UK's Leading
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-              {" "}
-              ECU Remapping Platform
-            </span>
-          </h2>
-
-          <p className="text-2xl text-foreground/70 mb-8 leading-relaxed max-w-4xl mx-auto">
-            Connect with certified ECU remapping specialists across the UK. We specialize in performance tuning, economy
-            mapping, DPF removal, EGR deletion, and diagnostic services for all vehicle makes and models.
+      <section className="py-16 md:py-32 px-4 md:px-6 text-white relative">
+        <div className="container mx-auto text-center max-w-6xl relative z-10">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-yellow-200 to-amber-200 bg-clip-text text-transparent drop-shadow-2xl leading-tight">
+            Professional ECU Remapping Network
+          </h1>
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-white/90 mb-8 md:mb-12 drop-shadow-lg max-w-4xl mx-auto leading-relaxed px-2">
+            Connect with certified ECU remapping specialists across the UK. Get expert engine tuning, performance
+            optimization, and fuel economy improvements from trusted professionals.
           </p>
 
-          <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
-            <div className="p-6 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl">
-              <h3 className="text-xl font-bold text-foreground mb-3">🔧 What We Specialize In</h3>
-              <ul className="text-left text-foreground/70 space-y-2">
-                <li>• Stage 1, 2 & 3 Performance Remapping</li>
-                <li>• Economy Tuning (15-25% fuel savings)</li>
-                <li>• DPF & EGR Removal Services</li>
-                <li>• AdBlue Delete & SCR Removal</li>
-                <li>• Speed Limiter Removal</li>
-                <li>• Diagnostic & Fault Code Clearing</li>
-              </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-12 md:mb-16 items-center">
+            <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20">
+              <img
+                src="/ecu-remapping-technician.png"
+                alt="Professional ECU Remapping Service"
+                className="w-full h-48 md:h-64 object-cover rounded-xl mb-4 md:mb-6 shadow-2xl"
+              />
+              <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-yellow-300">Expert ECU Tuning</h3>
+              <p className="text-white/80 text-base md:text-lg">
+                Our certified specialists use the latest diagnostic equipment and mapping software to optimize your
+                vehicle's performance safely and reliably.
+              </p>
             </div>
-            <div className="p-6 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl">
-              <h3 className="text-xl font-bold text-foreground mb-3">🚙 Vehicles We Cover</h3>
-              <ul className="text-left text-foreground/70 space-y-2">
-                <li>• Cars: BMW, Audi, VW, Mercedes, Ford</li>
-                <li>• Vans: Transit, Sprinter, Crafter, Vivaro</li>
-                <li>• Trucks: DAF, Scania, Volvo, MAN, Iveco</li>
-                <li>• Agricultural: Tractors & Farm Equipment</li>
-                <li>• Marine: Boat & Ship Engine Tuning</li>
-                <li>• Motorcycles: All Makes & Models</li>
-              </ul>
+
+            <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20">
+              <img
+                src="/car-dyno-results.png"
+                alt="Performance Testing and Results"
+                className="w-full h-48 md:h-64 object-cover rounded-xl mb-4 md:mb-6 shadow-2xl"
+              />
+              <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 text-yellow-300">Proven Results</h3>
+              <p className="text-white/80 text-base md:text-lg">
+                See real performance gains with dyno-tested results. Our remaps deliver measurable improvements in
+                power, torque, and fuel efficiency.
+              </p>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
+            <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
+                <div className="h-24 md:h-32 bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                  <Zap className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-2 left-2">
+                  <h3 className="text-lg md:text-xl font-bold text-white">Performance Remapping</h3>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/20">
+                <p className="text-white/90 text-sm leading-relaxed">
+                  Increase power and torque by 15-35% with our Stage 1, 2 & 3 performance maps. Professional ECU
+                  optimization for maximum performance gains.
+                </p>
+                <ul className="mt-2 md:mt-3 text-xs text-white/70 space-y-1">
+                  <li>• Stage 1: +15-25% power increase</li>
+                  <li>• Stage 2: +20-30% performance boost</li>
+                  <li>• Stage 3: +25-35% maximum gains</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
+                <div className="h-24 md:h-32 bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                  <Settings className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-2 left-2">
+                  <h3 className="text-lg md:text-xl font-bold text-white">Economy Tuning</h3>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/20">
+                <p className="text-white/90 text-sm leading-relaxed">
+                  Achieve 15-25% fuel savings with our economy maps. Perfect for fleet vehicles and daily drivers
+                  seeking better MPG.
+                </p>
+                <ul className="mt-2 md:mt-3 text-xs text-white/70 space-y-1">
+                  <li>• Up to 25% better fuel economy</li>
+                  <li>• Optimized for daily driving</li>
+                  <li>• Fleet vehicle specialists</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="glass-card-grey p-4 md:p-8 rounded-2xl border border-white/20 hover:border-yellow-400/40 transition-all duration-300 group">
+              <div className="relative mb-4 md:mb-6 overflow-hidden rounded-lg">
+                <div className="h-24 md:h-32 bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                  <TrendingUp className="h-12 w-12 md:h-16 md:w-16 text-white opacity-90" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute bottom-2 left-2">
+                  <h3 className="text-lg md:text-xl font-bold text-white">DPF & EGR Services</h3>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 md:p-4 border border-white/20">
+                <p className="text-white/90 text-sm leading-relaxed">
+                  Professional DPF removal, EGR deletion, and AdBlue delete services. Resolve diesel issues permanently
+                  with expert solutions.
+                </p>
+                <ul className="mt-2 md:mt-3 text-xs text-white/70 space-y-1">
+                  <li>• DPF removal & mapping</li>
+                  <li>• EGR valve solutions</li>
+                  <li>• AdBlue system removal</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+            <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <Shield className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-bold text-white text-sm md:text-base">Fully Insured</div>
+                <div className="text-xs md:text-sm text-white/70">£2M Public Liability</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <Award className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-bold text-white text-sm md:text-base">Certified Specialists</div>
+                <div className="text-xs md:text-sm text-white/70">IMI Qualified Technicians</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3 glass-card-grey p-3 md:p-4 rounded-xl border border-white/10">
+              <Clock className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-bold text-white text-sm md:text-base">Same Day Service</div>
+                <div className="text-xs md:text-sm text-white/70">Mobile & Workshop Available</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-8 md:mb-12">
             <Button
               size="lg"
-              className="text-lg px-10 py-4 btn-primary shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
+              className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 glass-button bg-gradient-to-r from-yellow-500/80 to-amber-600/80 hover:from-yellow-400/90 hover:to-amber-500/90 text-white shadow-2xl w-full sm:w-auto"
               asChild
             >
-              <Link href="/jobs/post" className="flex items-center gap-2">
-                Get Your ECU Remapped
-                <ArrowRight className="h-5 w-5" />
+              <Link href="/jobs/post" className="flex items-center justify-center gap-3">
+                Find ECU Specialists
+                <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="text-lg px-10 py-4 border-2 border-primary/30 bg-white/60 backdrop-blur-sm hover:bg-white/80 text-primary hover:text-primary transition-all duration-300 hover:scale-105 shadow-lg"
+              className="text-base md:text-lg px-8 md:px-12 py-3 md:py-4 glass-button border-2 border-yellow-400/60 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
               asChild
             >
-              <Link href="/dealers/register" className="flex items-center gap-2">
-                Join as ECU Specialist
-                <Users className="h-5 w-5" />
+              <Link href="/dealers/register" className="flex items-center justify-center gap-3">
+                Join as Dealer
+                <Users className="h-4 w-4 md:h-5 md:w-5" />
               </Link>
             </Button>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="flex items-center justify-center gap-3 p-6 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <CheckCircle className="h-6 w-6 text-green-500" />
-              <span className="font-semibold text-foreground">500+ Certified ECU Specialists</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 p-6 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <Star className="h-6 w-6 text-amber-500" />
-              <span className="font-semibold text-foreground">10,000+ Successful Remaps</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 p-6 bg-white/60 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-              <Shield className="h-6 w-6 text-secondary" />
-              <span className="font-semibold text-foreground">Lifetime Software Warranty</span>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="py-20 px-6 bg-white/40 backdrop-blur-sm relative">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-foreground mb-6">Professional ECU Remapping Services</h3>
-            <p className="text-xl text-foreground/70 max-w-3xl mx-auto">
-              Our network of certified specialists use the latest ECU tools and software to unlock your vehicle's true
-              potential while maintaining reliability and emissions compliance where required.
-            </p>
-          </div>
+      <Suspense fallback={<div className="h-96 bg-gradient-to-br from-slate-50 to-white animate-pulse" />}>
+        <HeroSection />
+      </Suspense>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            <Card className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation overflow-hidden">
-              <div className="h-48 bg-gradient-to-br from-blue-500 to-blue-600 relative overflow-hidden">
-                <img
-                  src="/ecu-remapping-setup.png"
-                  alt="ECU Remapping Process"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h4 className="font-bold text-lg">Performance Remapping</h4>
-                </div>
-              </div>
-              <CardHeader className="p-6">
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Increase power and torque by 15-35% with our Stage 1, 2 & 3 performance maps. Custom tuning for track,
-                  road, or mixed use applications.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+      <Suspense fallback={<div className="h-64 bg-white/40 animate-pulse" />}>
+        <ServicesSection />
+      </Suspense>
 
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation overflow-hidden"
-              style={{ animationDelay: "0.5s" }}
-            >
-              <div className="h-48 bg-gradient-to-br from-green-500 to-green-600 relative overflow-hidden">
-                <img
-                  src="/improved-mpg-gauge.png"
-                  alt="Economy Tuning"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h4 className="font-bold text-lg">Economy Tuning</h4>
-                </div>
-              </div>
-              <CardHeader className="p-6">
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Achieve 15-25% fuel savings with our economy maps. Perfect for fleet vehicles, delivery vans, and
-                  daily drivers seeking better MPG.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+      <Suspense fallback={<div className="h-64 bg-gradient-to-br from-slate-50/50 to-slate-100/50 animate-pulse" />}>
+        <FeaturesSection />
+      </Suspense>
 
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation overflow-hidden"
-              style={{ animationDelay: "1s" }}
-            >
-              <div className="h-48 bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
-                <img
-                  src="/dpf-removal.png"
-                  alt="DPF Removal"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 text-white">
-                  <h4 className="font-bold text-lg">DPF & EGR Services</h4>
-                </div>
-              </div>
-              <CardHeader className="p-6">
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Professional DPF removal, EGR deletion, and AdBlue delete services. Eliminate costly regeneration
-                  issues and improve reliability.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h4 className="text-2xl font-bold text-foreground mb-4">🔧 Professional ECU Tools We Use</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <p className="font-semibold text-foreground">Diagnostic Tools:</p>
-                    <ul className="text-foreground/70 space-y-1">
-                      <li>• Alientech KESS3</li>
-                      <li>• CMD Flash</li>
-                      <li>• MPPS V21</li>
-                      <li>• Galletto 1260</li>
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-semibold text-foreground">Software:</p>
-                    <ul className="text-foreground/70 space-y-1">
-                      <li>• WinOLS</li>
-                      <li>• ECM Titanium</li>
-                      <li>• Swiftec</li>
-                      <li>• Custom Maps</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center">
-                <img
-                  src="/ecu-remapping-workbench.png"
-                  alt="ECU Remapping Tools"
-                  className="w-full max-w-sm mx-auto rounded-2xl shadow-xl"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-6 bg-gradient-to-br from-slate-50/50 to-slate-100/50 backdrop-blur-sm relative">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-foreground mb-6">How ECU Remapping Works</h3>
-            <p className="text-xl text-foreground/70">Professional 3-step process for safe and reliable ECU tuning</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-primary to-secondary rounded-full shadow-lg">
-                  <Car className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">1. Vehicle Analysis</h4>
-              <p className="text-foreground/70 text-lg">
-                Our specialists connect to your vehicle's OBD port, read the original ECU file, and analyze your
-                engine's current parameters and limitations.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-secondary to-primary rounded-full shadow-lg">
-                  <Zap className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">2. Custom Mapping</h4>
-              <p className="text-foreground/70 text-lg">
-                We create a custom map optimized for your specific requirements - performance, economy, or mixed use -
-                while maintaining engine safety margins.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-full shadow-lg">
-                  <CheckCircle className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">3. Flash & Test</h4>
-              <p className="text-foreground/70 text-lg">
-                The new map is flashed to your ECU, followed by comprehensive testing and road trials to ensure optimal
-                performance and reliability.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-6 bg-white/40 backdrop-blur-sm relative">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-foreground mb-6">Why Choose CTEK JOB LEADS?</h3>
-            <p className="text-xl text-foreground/70 max-w-2xl mx-auto">
-              Experience the future of ECU remapping with our advanced platform designed for professionals
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation">
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-secondary/80 to-secondary rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <MapPin className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">Local Network Coverage</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Connect with verified dealers within 30-60 miles of your location. Our intelligent matching system
-                  ensures you find the right expertise nearby.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation"
-              style={{ animationDelay: "0.5s" }}
-            >
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-primary/80 to-primary rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">DVLA Integration</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Automatic vehicle data lookup using official DVLA API ensures accurate ECU information and seamless
-                  job matching.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation"
-              style={{ animationDelay: "1s" }}
-            >
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-orange-500/80 to-orange-600/80 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Clock className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">Real-Time Tracking</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Live updates when your dealer is traveling to you with estimated arrival times and job progress
-                  notifications.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation"
-              style={{ animationDelay: "1.5s" }}
-            >
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-primary/80 to-secondary/80 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">Secure Communication</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Built-in messaging system for secure communication between customers and dealers throughout the entire
-                  process.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation"
-              style={{ animationDelay: "2s" }}
-            >
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-secondary/80 to-primary/80 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Car className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">Tool Compatibility</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Advanced matching system connects you with dealers who have the exact ECU tools required for your
-                  specific vehicle.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card
-              className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 bg-white/70 backdrop-blur-xl border border-white/20 group hover:scale-105 float-animation"
-              style={{ animationDelay: "2.5s" }}
-            >
-              <CardHeader className="p-8">
-                <div className="p-4 bg-gradient-to-br from-amber-500/80 to-amber-600/80 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Zap className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-foreground mb-4">Secure Payments</CardTitle>
-                <CardDescription className="text-foreground/70 text-base leading-relaxed">
-                  Bank transfer gateway managed by our admin team ensures secure transactions for both job postings and
-                  dealer subscriptions.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-gradient-to-br from-slate-50/50 to-slate-100/50 backdrop-blur-sm relative">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-foreground mb-6">How It Works</h3>
-            <p className="text-xl text-foreground/70">Simple steps to get your ECU remapped by professionals</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-primary to-secondary rounded-full shadow-lg">
-                  <Car className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">1. Post Your Job</h4>
-              <p className="text-foreground/70 text-lg">
-                Enter your vehicle details and requirements. Our DVLA integration automatically fills in technical
-                specifications.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-secondary to-primary rounded-full shadow-lg">
-                  <Users className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">2. Get Matched</h4>
-              <p className="text-foreground/70 text-lg">
-                Certified dealers in your area receive your job and submit competitive quotes with their expertise.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="p-6 bg-white/80 backdrop-blur-xl rounded-full w-24 h-24 mx-auto mb-6 shadow-2xl border border-white/20 group-hover:scale-110 transition-all duration-300">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-full shadow-lg">
-                  <CheckCircle className="h-8 w-8 text-white mx-auto" />
-                </div>
-              </div>
-              <h4 className="text-2xl font-bold text-foreground mb-4">3. Get It Done</h4>
-              <p className="text-foreground/70 text-lg">
-                Choose your preferred dealer, track their arrival, and enjoy professional ECU remapping service.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-gradient-to-r from-primary/90 to-secondary/90 backdrop-blur-xl text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 backdrop-blur-3xl"></div>
+      <section className="py-16 md:py-24 px-4 md:px-6 glass-card-grey border-y border-white/20 text-white relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 backdrop-blur-md"></div>
         <div className="container mx-auto text-center max-w-4xl relative z-10">
-          <h3 className="text-5xl font-bold mb-8">Ready to Get Started?</h3>
-          <p className="text-2xl text-white/80 mb-12 leading-relaxed">
-            Join thousands of satisfied customers and professional dealers on our trusted platform
+          <div className="mb-8 md:mb-12">
+            <img
+              src="/professional-workshop.png"
+              alt="Professional ECU Remapping Workshop"
+              className="w-full h-32 md:h-48 object-cover rounded-2xl shadow-2xl mx-auto mb-6 md:mb-8"
+            />
+          </div>
+
+          <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-yellow-200 to-amber-200 bg-clip-text text-transparent drop-shadow-lg leading-tight">
+            Ready to Unlock Your Car's Potential?
+          </h3>
+          <p className="text-lg md:text-2xl text-white/90 mb-8 md:mb-12 drop-shadow-md px-2">
+            Join thousands of satisfied customers and certified ECU remapping professionals on the UK's most trusted
+            automotive tuning platform
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-8 md:mb-12">
             <Button
               size="lg"
               variant="secondary"
-              className="text-lg px-10 py-4 bg-white/90 backdrop-blur-sm text-primary hover:bg-white shadow-2xl hover:scale-105 transition-all duration-300"
+              className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 glass-button text-white hover:text-yellow-200 shadow-xl w-full sm:w-auto"
               asChild
             >
-              <Link href="/jobs/post" className="flex items-center gap-2">
-                Post Your First Job
-                <ArrowRight className="h-5 w-5" />
+              <Link href="/jobs/post" className="flex items-center justify-center gap-2">
+                Get Your Car Remapped
+                <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="text-lg px-10 py-4 border-2 border-white/50 text-white hover:bg-white/20 bg-white/10 backdrop-blur-sm shadow-2xl hover:scale-105 transition-all duration-300"
+              className="text-base md:text-lg px-8 md:px-10 py-3 md:py-4 glass-button border-2 border-yellow-400/40 text-white hover:text-yellow-200 shadow-xl bg-transparent w-full sm:w-auto"
               asChild
             >
-              <Link href="/dealers/register" className="flex items-center gap-2">
-                Apply as Dealer
-                <Users className="h-5 w-5" />
+              <Link href="/dealers/register" className="flex items-center justify-center gap-2">
+                Become ECU Specialist
+                <Users className="h-4 w-4 md:h-5 md:w-5" />
               </Link>
             </Button>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl">
-              <Phone className="h-5 w-5 text-white/80" />
-              <span className="text-white/80">24/7 Customer Support</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-xl">
-              <Mail className="h-5 w-5 text-white/80" />
-              <span className="text-white/80">Instant Job Notifications</span>
-            </div>
           </div>
         </div>
       </section>
 
-      <footer className="bg-white/80 backdrop-blur-xl border-t border-white/20 py-16 px-6 shadow-2xl">
+      <footer className="glass-grey border-t border-white/20 py-12 md:py-16 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-5 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8 mb-8 md:mb-12">
             <div className="md:col-span-2">
-              <Link href="/" className="flex items-center gap-3 mb-6 group">
-                <div className="p-2 bg-gradient-to-br from-primary to-secondary rounded-lg shadow-lg group-hover:scale-105 transition-transform duration-300">
-                  <Car className="h-6 w-6 text-white" />
+              <Link href="/" className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                <div className="p-1.5 md:p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg shadow-lg glass-button">
+                  <Car className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-yellow-300 to-amber-300 bg-clip-text text-transparent">
                   CTEK JOB LEADS
                 </span>
               </Link>
-              <p className="text-foreground/70 text-lg leading-relaxed mb-6">
-                The UK's leading professional ECU remapping network, connecting customers with certified dealers
-                nationwide.
+              <p className="text-white/80 text-base md:text-lg mb-4 md:mb-6 drop-shadow-sm">
+                The UK's premier ECU remapping network, connecting vehicle owners with certified tuning specialists.
+                Professional engine optimization, performance tuning, and fuel economy solutions nationwide.
               </p>
-              <div className="flex gap-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-green-100/80 backdrop-blur-sm text-green-700 border border-green-200/50"
-                >
-                  Trusted Platform
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-blue-100/80 backdrop-blur-sm text-blue-700 border border-blue-200/50"
-                >
-                  500+ Dealers
-                </Badge>
-              </div>
             </div>
 
             <div>
-              <h4 className="font-bold text-foreground mb-6 text-lg">For Customers</h4>
-              <ul className="space-y-3 text-foreground/70">
+              <h4 className="font-bold text-white mb-4 md:mb-6 drop-shadow-sm">For Customers</h4>
+              <ul className="space-y-2 md:space-y-3 text-white/80">
                 <li>
-                  <Link href="/jobs/post" className="hover:text-primary transition-colors">
+                  <Link
+                    href="/jobs/post"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
                     Post a Job
                   </Link>
                 </li>
                 <li>
-                  <Link href="/jobs" className="hover:text-primary transition-colors">
+                  <Link
+                    href="/jobs"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
                     Browse Jobs
                   </Link>
                 </li>
                 <li>
-                  <Link href="/dealers" className="hover:text-primary transition-colors">
+                  <Link
+                    href="/dealers"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
                     Find Dealers
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/help" className="hover:text-primary transition-colors">
-                    Help Center
                   </Link>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-foreground mb-6 text-lg">For Dealers</h4>
-              <ul className="space-y-3 text-foreground/70">
+              <h4 className="font-bold text-white mb-4 md:mb-6 drop-shadow-sm">For Dealers</h4>
+              <ul className="space-y-2 md:space-y-3 text-white/80">
                 <li>
-                  <Link href="/dealers/register" className="hover:text-primary transition-colors">
+                  <Link
+                    href="/dealers/register"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
                     Become a Dealer
                   </Link>
                 </li>
                 <li>
-                  <Link href="/dashboard" className="hover:text-primary transition-colors">
-                    Dealer Dashboard
+                  <Link
+                    href="/dashboard"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
+                    Dashboard
                   </Link>
                 </li>
                 <li>
-                  <Link href="/tools" className="hover:text-primary transition-colors">
-                    Supported Tools
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing" className="hover:text-primary transition-colors">
+                  <Link
+                    href="/pricing"
+                    className="hover:text-yellow-300 transition-all duration-300 hover:drop-shadow-lg text-sm md:text-base"
+                  >
                     Pricing
                   </Link>
                 </li>
               </ul>
             </div>
-
-            <div>
-              <h4 className="font-bold text-foreground mb-6 text-lg">Support</h4>
-              <ul className="space-y-3 text-foreground/70">
-                <li>
-                  <Link href="/contact" className="hover:text-primary transition-colors">
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="hover:text-primary transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="hover:text-primary transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/security" className="hover:text-primary transition-colors">
-                    Security
-                  </Link>
-                </li>
-              </ul>
-            </div>
           </div>
 
-          <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-foreground/70 mb-4 md:mb-0">&copy; 2024 CTEK JOB LEADS. All rights reserved.</p>
-            <div className="flex items-center gap-6 text-sm text-foreground/60">
-              <span>Made in the UK</span>
-              <span>•</span>
-              <span>Professional Service</span>
-              <span>•</span>
-              <span>Trusted by 1000+ Users</span>
-            </div>
+          <div className="border-t border-white/20 pt-6 md:pt-8 text-center">
+            <p className="text-white/80 drop-shadow-sm text-sm md:text-base">
+              &copy; 2024 CTEK JOB LEADS - Professional ECU Remapping Network. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

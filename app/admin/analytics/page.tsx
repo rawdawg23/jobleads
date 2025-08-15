@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +39,54 @@ interface Analytics {
   }
 }
 
+const MetricCard = ({
+  title,
+  value,
+  growth,
+  icon: Icon,
+  gradient,
+  color,
+}: {
+  title: string
+  value: string | number
+  growth?: string
+  icon: any
+  gradient: string
+  color: string
+}) => (
+  <Card className={`shadow-xl border-0 bg-gradient-to-br ${gradient} text-white`}>
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`${color} text-sm font-medium`}>{title}</p>
+          <p className="text-3xl font-bold">{value}</p>
+          {growth && (
+            <div className="flex items-center gap-1 mt-2">
+              <TrendingUp className={`h-4 w-4 ${color}`} />
+              <span className={`text-sm ${color}`}>{growth}</span>
+            </div>
+          )}
+        </div>
+        <Icon className={`h-10 w-10 ${color}`} />
+      </div>
+    </CardContent>
+  </Card>
+)
+
+const ProgressMetric = ({ label, value, total }: { label: string; value: number; total?: number }) => {
+  const percentage = total ? Math.round((value / Math.max(total, 1)) * 100) : value
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-sm font-bold text-gray-900">{total ? value : `${percentage}%`}</span>
+      </div>
+      <Progress value={percentage} className="h-2" />
+    </div>
+  )
+}
+
 export default function AdminAnalyticsPage() {
   const { user, loading, isAdmin } = useAuth()
   const router = useRouter()
@@ -52,13 +100,7 @@ export default function AdminAnalyticsPage() {
     }
   }, [user, loading, isAdmin, router])
 
-  useEffect(() => {
-    if (user && isAdmin) {
-      fetchAnalytics()
-    }
-  }, [user, isAdmin])
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/analytics", {
         credentials: "include",
@@ -75,24 +117,38 @@ export default function AdminAnalyticsPage() {
     } finally {
       setLoadingAnalytics(false)
     }
-  }
+  }, [])
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-    }).format(amount)
-  }
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchAnalytics()
+    }
+  }, [user, isAdmin, fetchAnalytics])
 
-  const getCompletionRate = () => {
-    if (!analytics || analytics.totalJobs === 0) return 0
-    return Math.round((analytics.completedJobs / analytics.totalJobs) * 100)
-  }
+  const calculations = useMemo(() => {
+    if (!analytics) return null
 
-  const getGrowthPercentage = (current: number, total: number) => {
-    if (total === 0) return 0
-    return Math.round((current / total) * 100)
-  }
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+      }).format(amount)
+    }
+
+    const completionRate =
+      analytics.totalJobs === 0 ? 0 : Math.round((analytics.completedJobs / analytics.totalJobs) * 100)
+    const getGrowthPercentage = (current: number, total: number) => {
+      if (total === 0) return 0
+      return Math.round((current / total) * 100)
+    }
+
+    return {
+      formatCurrency,
+      completionRate,
+      monthlyGrowthRate: getGrowthPercentage(analytics.recentGrowth.usersThisMonth, analytics.totalUsers),
+      adminCount: analytics.totalUsers - analytics.totalCustomers - analytics.totalDealers,
+    }
+  }, [analytics])
 
   if (loading || loadingAnalytics) {
     return (
@@ -105,7 +161,7 @@ export default function AdminAnalyticsPage() {
     )
   }
 
-  if (!user || !isAdmin || !analytics) {
+  if (!user || !isAdmin || !analytics || !calculations) {
     return null
   }
 
@@ -143,68 +199,38 @@ export default function AdminAnalyticsPage() {
 
         {/* Key Metrics */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Users</p>
-                  <p className="text-3xl font-bold">{analytics.totalUsers}</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="h-4 w-4 text-blue-200" />
-                    <span className="text-sm text-blue-100">+{analytics.recentGrowth.usersThisMonth} this month</span>
-                  </div>
-                </div>
-                <Users className="h-10 w-10 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Total Jobs</p>
-                  <p className="text-3xl font-bold">{analytics.totalJobs}</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="h-4 w-4 text-green-200" />
-                    <span className="text-sm text-green-100">+{analytics.recentGrowth.jobsThisMonth} this month</span>
-                  </div>
-                </div>
-                <Wrench className="h-10 w-10 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold">{formatCurrency(analytics.totalRevenue)}</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="h-4 w-4 text-purple-200" />
-                    <span className="text-sm text-purple-100">
-                      {formatCurrency(analytics.recentGrowth.revenueThisMonth)} this month
-                    </span>
-                  </div>
-                </div>
-                <CreditCard className="h-10 w-10 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Avg Job Value</p>
-                  <p className="text-3xl font-bold">{formatCurrency(analytics.averageJobValue)}</p>
-                  <p className="text-sm text-orange-100 mt-2">Per completed job</p>
-                </div>
-                <Target className="h-10 w-10 text-orange-200" />
-              </div>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Total Users"
+            value={analytics.totalUsers}
+            growth={`+${analytics.recentGrowth.usersThisMonth} this month`}
+            icon={Users}
+            gradient="from-blue-500 to-blue-600"
+            color="text-blue-100"
+          />
+          <MetricCard
+            title="Total Jobs"
+            value={analytics.totalJobs}
+            growth={`+${analytics.recentGrowth.jobsThisMonth} this month`}
+            icon={Wrench}
+            gradient="from-green-500 to-green-600"
+            color="text-green-100"
+          />
+          <MetricCard
+            title="Total Revenue"
+            value={calculations.formatCurrency(analytics.totalRevenue)}
+            growth={calculations.formatCurrency(analytics.recentGrowth.revenueThisMonth) + " this month"}
+            icon={CreditCard}
+            gradient="from-purple-500 to-purple-600"
+            color="text-purple-100"
+          />
+          <MetricCard
+            title="Avg Job Value"
+            value={calculations.formatCurrency(analytics.averageJobValue)}
+            growth="Per completed job"
+            icon={Target}
+            gradient="from-orange-500 to-orange-600"
+            color="text-orange-100"
+          />
         </div>
 
         {/* Performance Metrics */}
@@ -217,34 +243,9 @@ export default function AdminAnalyticsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Job Completion Rate</span>
-                  <span className="text-sm font-bold text-gray-900">{getCompletionRate()}%</span>
-                </div>
-                <Progress value={getCompletionRate()} className="h-2" />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Active Jobs</span>
-                  <span className="text-sm font-bold text-gray-900">{analytics.activeJobs}</span>
-                </div>
-                <Progress value={(analytics.activeJobs / Math.max(analytics.totalJobs, 1)) * 100} className="h-2" />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Monthly Growth</span>
-                  <span className="text-sm font-bold text-gray-900">
-                    {getGrowthPercentage(analytics.recentGrowth.usersThisMonth, analytics.totalUsers)}%
-                  </span>
-                </div>
-                <Progress
-                  value={getGrowthPercentage(analytics.recentGrowth.usersThisMonth, analytics.totalUsers)}
-                  className="h-2"
-                />
-              </div>
+              <ProgressMetric label="Job Completion Rate" value={calculations.completionRate} />
+              <ProgressMetric label="Active Jobs" value={analytics.activeJobs} total={analytics.totalJobs} />
+              <ProgressMetric label="Monthly Growth" value={calculations.monthlyGrowthRate} />
             </CardContent>
           </Card>
 
@@ -278,9 +279,7 @@ export default function AdminAnalyticsPage() {
                   <Badge className="bg-red-100 text-red-800">Admins</Badge>
                   <span className="text-sm text-gray-600">Platform managers</span>
                 </div>
-                <span className="font-bold text-gray-900">
-                  {analytics.totalUsers - analytics.totalCustomers - analytics.totalDealers}
-                </span>
+                <span className="font-bold text-gray-900">{calculations.adminCount}</span>
               </div>
             </CardContent>
           </Card>
@@ -306,7 +305,7 @@ export default function AdminAnalyticsPage() {
 
               <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(analytics.recentGrowth.revenueThisMonth)}
+                  {calculations.formatCurrency(analytics.recentGrowth.revenueThisMonth)}
                 </div>
                 <div className="text-sm text-purple-700 font-medium">Revenue</div>
               </div>

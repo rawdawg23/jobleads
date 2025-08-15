@@ -47,25 +47,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("[v0] AuthProvider mounting...")
 
-    const unsubscribe = subscribeToGlobalAuth(async (globalState) => {
-      setLoading(globalState.loading)
+    try {
+      const unsubscribe = subscribeToGlobalAuth(async (globalState: any) => {
+        setLoading(globalState.loading)
 
-      if (globalState.session?.user && !user) {
-        await loadUserProfile(globalState.session.user)
-      } else if (!globalState.session?.user) {
-        setUser(null)
+        if (globalState.session?.user && !user) {
+          await loadUserProfile(globalState.session.user)
+        } else if (!globalState.session?.user) {
+          setUser(null)
+        }
+      })
+
+      return () => {
+        console.log("[v0] AuthProvider cleanup")
+        unsubscribe()
       }
-    })
-
-    return () => {
-      console.log("[v0] AuthProvider cleanup")
-      unsubscribe()
+    } catch (error) {
+      console.error("[v0] Failed to subscribe to global auth:", error)
+      setLoading(false)
     }
   }, [])
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
       console.log("[v0] Loading user profile for:", authUser.id)
+
       const client = getGlobalSupabase()
       const { data: profile } = await client.from("users").select("*").eq("id", authUser.id).single()
 
@@ -89,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const client = getGlobalSupabase()
-    if (!client) return { error: "Authentication service not available" }
 
     try {
       const { error } = await client.auth.signInWithPassword({
@@ -118,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   ) => {
     const client = getGlobalSupabase()
-    if (!client) return { error: "Authentication service not available" }
 
     try {
       const { data, error } = await client.auth.signUp({
@@ -163,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     const client = getGlobalSupabase()
-    if (!client) return
 
     try {
       await client.auth.signOut()

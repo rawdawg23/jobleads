@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MapPin, Car, Clock, Search, Filter, Navigation } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 
 interface Job {
   id: string
@@ -43,6 +44,7 @@ export default function DealerJobsPage() {
     search: "",
   })
   const [dealerLocation, setDealerLocation] = useState<string>("")
+  const supabase = createClient()
 
   useEffect(() => {
     if (!loading && (!user || !isDealer)) {
@@ -55,6 +57,31 @@ export default function DealerJobsPage() {
       fetchAvailableJobs()
     }
   }, [user, isDealer])
+
+  useEffect(() => {
+    if (!user || !isDealer) return
+
+    const jobsSubscription = supabase
+      .channel("dealer-available-jobs")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: "status=eq.open",
+        },
+        (payload) => {
+          console.log("[v0] Job updated:", payload.new)
+          fetchAvailableJobs() // Refresh available jobs when any job changes
+        },
+      )
+      .subscribe()
+
+    return () => {
+      jobsSubscription.unsubscribe()
+    }
+  }, [user, isDealer, supabase])
 
   useEffect(() => {
     filterJobs()
@@ -110,11 +137,18 @@ export default function DealerJobsPage() {
     try {
       const response = await fetch(`/api/dealer/jobs/${jobId}/apply`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
 
       if (response.ok) {
-        // Refresh jobs list
+        console.log("[v0] Successfully applied for job:", jobId)
+        // Real-time subscription will automatically refresh the jobs
         await fetchAvailableJobs()
+      } else {
+        const errorData = await response.json()
+        console.error("[v0] Failed to apply for job:", errorData.error)
       }
     } catch (error) {
       console.error("Failed to apply for job:", error)

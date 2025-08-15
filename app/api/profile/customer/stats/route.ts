@@ -18,28 +18,40 @@ export async function GET(request: NextRequest) {
     // Get user profile to verify role
     const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-    if (!profile || profile.role !== "Customer") {
+    if (!profile || profile.role !== "customer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Fetch customer statistics
-    const { data: jobs } = await supabase
-      .from("jobs")
-      .select("id, status, customer_price, created_at")
-      .eq("customer_id", user.id)
+    const [jobsResult, messagesResult, paymentsResult, reviewsResult] = await Promise.all([
+      supabase.from("jobs").select("id, status, customer_price, created_at").eq("customer_id", user.id),
+      supabase.from("messages").select("id").eq("customer_id", user.id),
+      supabase.from("payments").select("amount, status").eq("customer_id", user.id),
+      supabase.from("reviews").select("rating").eq("customer_id", user.id),
+    ])
 
-    const { data: messages } = await supabase.from("messages").select("id").eq("customer_id", user.id)
+    const jobs = jobsResult.data || []
+    const payments = paymentsResult.data || []
+    const reviews = reviewsResult.data || []
+
+    // Calculate average rating from actual reviews
+    const averageRating =
+      reviews.length > 0 ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length : 0
 
     const stats = {
-      totalJobs: jobs?.length || 0,
-      activeJobs: jobs?.filter((job) => ["open", "accepted", "in_progress"].includes(job.status)).length || 0,
-      completedJobs: jobs?.filter((job) => job.status === "completed").length || 0,
-      totalMessages: messages?.length || 0,
-      totalSpent: jobs?.reduce((sum, job) => sum + (job.customer_price || 0), 0) || 0,
-      averageRating: 4.5, // TODO: Calculate from actual reviews
+      totalJobs: jobs.length,
+      activeJobs: jobs.filter((job) => ["open", "accepted", "in_progress"].includes(job.status)).length,
+      completedJobs: jobs.filter((job) => job.status === "completed").length,
+      totalMessages: messagesResult.data?.length || 0,
+      totalSpent:
+        payments
+          .filter((payment) => payment.status === "completed")
+          .reduce((sum, payment) => sum + (payment.amount || 0), 0) / 100,
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
     }
 
-    return NextResponse.json({ stats })
+    const response = NextResponse.json({ stats })
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600")
+    return response
   } catch (error) {
     console.error("Error in GET /api/profile/customer/stats:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

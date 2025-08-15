@@ -23,6 +23,21 @@ interface VehicleData {
   engineSize: string
   fuelType: string
   colour: string
+  co2Emissions?: number
+  euroStatus?: string
+  taxStatus?: string
+  motStatus?: string
+  ecuInfo?: {
+    ecuType: string
+    readMethod: string
+    estimatedPower: string
+    estimatedTorque: string
+    remapPotential: string
+    recommendedTools: string[]
+    complexity: string
+    estimatedTime: string
+    warranty: string
+  }
 }
 
 export default function PostJobPage() {
@@ -292,35 +307,105 @@ export default function PostJobPage() {
                   <div className="p-2 bg-green-100 rounded-lg">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                   </div>
-                  Vehicle Found
+                  Vehicle Information
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-6 text-base">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Make:</span>
-                    <span className="text-gray-900">{vehicleData.make}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Basic Vehicle Data */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-800 border-b pb-2">Vehicle Details</h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Make:</span>
+                        <span className="text-gray-900 font-semibold">{vehicleData.make}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Model:</span>
+                        <span className="text-gray-900 font-semibold">{vehicleData.model}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Year:</span>
+                        <span className="text-gray-900 font-semibold">{vehicleData.year}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Engine:</span>
+                        <span className="text-gray-900 font-semibold">{vehicleData.engineSize}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Fuel Type:</span>
+                        <Badge variant={vehicleData.fuelType === "DIESEL" ? "default" : "secondary"}>
+                          {vehicleData.fuelType}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Colour:</span>
+                        <span className="text-gray-900 font-semibold">{vehicleData.colour}</span>
+                      </div>
+                      {vehicleData.co2Emissions && (
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">CO2 Emissions:</span>
+                          <span className="text-gray-900 font-semibold">{vehicleData.co2Emissions}g/km</span>
+                        </div>
+                      )}
+                      {vehicleData.euroStatus && (
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Euro Status:</span>
+                          <Badge variant="outline">{vehicleData.euroStatus}</Badge>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Model:</span>
-                    <span className="text-gray-900">{vehicleData.model}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Year:</span>
-                    <span className="text-gray-900">{vehicleData.year}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Engine:</span>
-                    <span className="text-gray-900">{vehicleData.engineSize}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Fuel:</span>
-                    <span className="text-gray-900">{vehicleData.fuelType}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-700">Colour:</span>
-                    <span className="text-gray-900">{vehicleData.colour}</span>
-                  </div>
+
+                  {/* ECU Information */}
+                  {vehicleData.ecuInfo && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-800 border-b pb-2">ECU & Remapping Details</h4>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">ECU Type:</span>
+                          <span className="text-blue-600 font-semibold">{vehicleData.ecuInfo.ecuType}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Read Method:</span>
+                          <span className="text-gray-900 font-semibold">{vehicleData.ecuInfo.readMethod}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Est. Power:</span>
+                          <span className="text-green-600 font-semibold">{vehicleData.ecuInfo.estimatedPower}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Est. Torque:</span>
+                          <span className="text-green-600 font-semibold">{vehicleData.ecuInfo.estimatedTorque}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Remap Potential:</span>
+                          <span className="text-orange-600 font-semibold">{vehicleData.ecuInfo.remapPotential}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Complexity:</span>
+                          <Badge variant={vehicleData.ecuInfo.complexity === "Medium-High" ? "destructive" : "default"}>
+                            {vehicleData.ecuInfo.complexity}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Est. Time:</span>
+                          <span className="text-gray-900 font-semibold">{vehicleData.ecuInfo.estimatedTime}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <h5 className="font-medium text-blue-800 mb-2">Recommended Tools:</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {vehicleData.ecuInfo.recommendedTools.map((tool) => (
+                            <Badge key={tool} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                              {tool}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

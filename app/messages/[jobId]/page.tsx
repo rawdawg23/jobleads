@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -20,6 +22,8 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
   const [dealerId, setDealerId] = useState<string | null>(null)
   const [dealerInfo, setDealerInfo] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [newMessage, setNewMessage] = useState("")
+  const [sending, setSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -112,6 +116,70 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
     loadData()
   }, [params.jobId, router, supabase])
 
+  useEffect(() => {
+    if (!params.jobId) return
+
+    const messageSubscription = supabase
+      .channel(`messages-${params.jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `job_id=eq.${params.jobId}`,
+        },
+        async (payload) => {
+          console.log("[v0] New message received:", payload.new)
+
+          // Fetch the complete message with user data
+          const { data: newMessageData } = await supabase
+            .from("messages")
+            .select(`
+              *,
+              users!messages_sender_id_fkey(first_name, last_name, role),
+              dealers(business_name)
+            `)
+            .eq("id", payload.new.id)
+            .single()
+
+          if (newMessageData) {
+            setMessages((prev) => [...prev, newMessageData])
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      messageSubscription.unsubscribe()
+    }
+  }, [params.jobId, supabase])
+
+  useEffect(() => {
+    if (!params.jobId) return
+
+    const jobSubscription = supabase
+      .channel(`job-${params.jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "jobs",
+          filter: `id=eq.${params.jobId}`,
+        },
+        (payload) => {
+          console.log("[v0] Job status updated:", payload.new)
+          setJob((prev) => ({ ...prev, ...payload.new }))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      jobSubscription.unsubscribe()
+    }
+  }, [params.jobId, supabase])
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -130,6 +198,39 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
         </div>
       </div>
     )
+  }
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMessage.trim() || sending) return
+
+    setSending(true)
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const messageData = {
+        job_id: params.jobId,
+        sender_id: user.id,
+        content: newMessage.trim(),
+        dealer_id: dealerId || null,
+      }
+
+      const { error } = await supabase.from("messages").insert([messageData])
+
+      if (error) {
+        console.error("[v0] Error sending message:", error)
+        return
+      }
+
+      setNewMessage("")
+    } catch (error) {
+      console.error("[v0] Error sending message:", error)
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -201,12 +302,18 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
             </div>
 
             {/* Message Input */}
-            <form action="/api/messages/send" method="POST" className="flex gap-2">
-              <input type="hidden" name="jobId" value={params.jobId} />
-              {dealerId && <input type="hidden" name="dealerId" value={dealerId} />}
-              <Input name="message" placeholder="Type your message..." className="flex-1" required maxLength={500} />
-              <Button type="submit">
-                <Send className="h-4 w-4" />
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1"
+                required
+                maxLength={500}
+                disabled={sending}
+              />
+              <Button type="submit" disabled={sending || !newMessage.trim()}>
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </form>
           </CardContent>

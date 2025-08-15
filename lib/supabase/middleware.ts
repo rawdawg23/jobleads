@@ -100,7 +100,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/api/auth/register-bypass") ||
     request.nextUrl.pathname.startsWith("/api/auth/register-working") ||
     request.nextUrl.pathname.startsWith("/api/auth/login-bypass") ||
-    request.nextUrl.pathname.startsWith("/api/fix-auth-trigger")
+    request.nextUrl.pathname.startsWith("/api/fix-auth-trigger") ||
+    request.nextUrl.pathname.startsWith("/admin/upgrade") ||
+    request.nextUrl.pathname.startsWith("/api/admin/upgrade-user")
 
   if (!isAuthRoute && !isPublicRoute) {
     const {

@@ -38,6 +38,7 @@ interface JobApplication {
   estimated_duration: number
   message: string
   created_at: string
+  status: string
   dealer: {
     business_name: string
     business_address: string
@@ -55,6 +56,7 @@ export default function CustomerJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loadingJobs, setLoadingJobs] = useState(true)
   const [error, setError] = useState("")
+  const supabase = createClient()
 
   useEffect(() => {
     if (!loading && (!user || !isCustomer)) {
@@ -68,9 +70,45 @@ export default function CustomerJobsPage() {
     }
   }, [user, isCustomer])
 
+  useEffect(() => {
+    if (!user || !isCustomer) return
+
+    const jobsSubscription = supabase
+      .channel(`customer-jobs-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: `customer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("[v0] Job updated:", payload.new)
+          fetchJobs() // Refresh jobs when any job changes
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "job_applications",
+        },
+        (payload) => {
+          console.log("[v0] Job application updated:", payload.new)
+          fetchJobs() // Refresh jobs when applications change
+        },
+      )
+      .subscribe()
+
+    return () => {
+      jobsSubscription.unsubscribe()
+    }
+  }, [user, isCustomer, supabase])
+
   const fetchJobs = async () => {
     try {
-      const supabase = createClient()
       const { data, error } = await supabase
         .from("jobs")
         .select(`
@@ -82,6 +120,7 @@ export default function CustomerJobsPage() {
             estimated_duration,
             message,
             created_at,
+            status,
             dealer:dealers(
               business_name,
               business_address,
@@ -107,18 +146,20 @@ export default function CustomerJobsPage() {
 
   const acceptQuote = async (jobId: string, applicationId: string, dealerId: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("jobs")
-        .update({
-          status: "accepted",
-          dealer_id: dealerId,
-          accepted_at: new Date().toISOString(),
-        })
-        .eq("id", jobId)
+      const response = await fetch(`/api/jobs/${jobId}/accept`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dealerId }),
+      })
 
-      if (error) throw error
-      fetchJobs() // Refresh jobs
+      if (!response.ok) {
+        throw new Error("Failed to accept quote")
+      }
+
+      console.log("[v0] Quote accepted successfully")
+      // Real-time subscription will automatically refresh the jobs
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept quote")
     }

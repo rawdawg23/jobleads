@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Get user profile to verify role
     const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-    if (!profile || profile.role !== "Dealer") {
+    if (!profile || profile.role !== "dealer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -29,34 +29,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Dealer profile not found" }, { status: 404 })
     }
 
-    // Fetch dealer statistics
-    const { data: applications } = await supabase
-      .from("job_applications")
-      .select("id, quote, created_at, job:jobs(status)")
-      .eq("dealer_id", dealer.id)
+    const [applicationsResult, messagesResult, reviewsResult] = await Promise.all([
+      supabase
+        .from("job_applications")
+        .select(`
+          id, quote, created_at, status, response_time,
+          job:jobs(id, status, customer_price, created_at)
+        `)
+        .eq("dealer_id", dealer.id),
+      supabase.from("messages").select("id, created_at").eq("dealer_id", dealer.id),
+      supabase.from("reviews").select("rating, created_at").eq("dealer_id", dealer.id),
+    ])
 
-    const { data: messages } = await supabase.from("messages").select("id").eq("dealer_id", dealer.id)
+    const applications = applicationsResult.data || []
+    const reviews = reviewsResult.data || []
+    const completedJobs = applications.filter((app) => app.job?.status === "completed")
+
+    // Calculate real average rating from reviews
+    const averageRating =
+      reviews.length > 0 ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length : 0
+
+    // Calculate real response time from applications
+    const responseTimes = applications.filter((app) => app.response_time).map((app) => app.response_time || 0)
+    const averageResponseTime =
+      responseTimes.length > 0 ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length : 0
 
     const stats = {
-      totalApplications: applications?.length || 0,
-      activeJobs: applications?.filter((app) => ["accepted", "in_progress"].includes(app.job?.status)).length || 0,
-      completedJobs: applications?.filter((app) => app.job?.status === "completed").length || 0,
-      totalMessages: messages?.length || 0,
-      totalEarnings:
-        applications
-          ?.filter((app) => app.job?.status === "completed")
-          .reduce((sum, app) => sum + (app.quote || 0), 0) || 0,
-      averageRating: 4.7, // TODO: Calculate from actual reviews
-      responseTime: 2.5, // TODO: Calculate from actual response times
-      successRate:
-        applications?.length > 0
-          ? Math.round(
-              (applications.filter((app) => app.job?.status === "completed").length / applications.length) * 100,
-            )
-          : 0,
+      totalApplications: applications.length,
+      activeJobs: applications.filter((app) => ["accepted", "in_progress"].includes(app.job?.status || "")).length,
+      completedJobs: completedJobs.length,
+      totalMessages: messagesResult.data?.length || 0,
+      totalEarnings: completedJobs.reduce((sum, app) => sum + (app.quote || 0), 0),
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
+      responseTime: Math.round(averageResponseTime * 10) / 10, // Round to 1 decimal place
+      successRate: applications.length > 0 ? Math.round((completedJobs.length / applications.length) * 100) : 0,
     }
 
-    return NextResponse.json({ stats })
+    const response = NextResponse.json({ stats })
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600")
+    return response
   } catch (error) {
     console.error("Error in GET /api/profile/dealer/stats:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

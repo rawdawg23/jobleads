@@ -1,5 +1,96 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+const ECU_DATABASE = {
+  // Common ECU types by manufacturer and engine
+  getEcuInfo: (make: string, model: string, year: number, engineSize: string, fuelType: string) => {
+    const makeUpper = make.toUpperCase()
+    const modelUpper = model.toUpperCase()
+    const capacity = Number.parseInt(engineSize.replace(/[^\d]/g, "")) || 0
+
+    // ECU mapping based on common vehicle configurations
+    if (makeUpper.includes("BMW")) {
+      if (fuelType === "DIESEL") {
+        return {
+          ecuType: capacity > 2500 ? "Bosch EDC17CP45" : "Bosch EDC17C50",
+          readMethod: "OBD + Bench",
+          estimatedPower: `${Math.round(capacity * 0.08)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.25)}Nm`,
+          remapPotential: "+25-35% Power, +30-40% Torque",
+          tools: ["KESS V2", "CMD Flash", "AutoTuner"],
+        }
+      } else {
+        return {
+          ecuType: capacity > 2500 ? "Bosch MED17.2" : "Bosch MEV17.2.2",
+          readMethod: "OBD",
+          estimatedPower: `${Math.round(capacity * 0.1)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.2)}Nm`,
+          remapPotential: "+15-25% Power, +20-30% Torque",
+          tools: ["KESS V2", "KTAG", "CMD Flash"],
+        }
+      }
+    }
+
+    if (
+      makeUpper.includes("AUDI") ||
+      makeUpper.includes("VOLKSWAGEN") ||
+      makeUpper.includes("SEAT") ||
+      makeUpper.includes("SKODA")
+    ) {
+      if (fuelType === "DIESEL") {
+        return {
+          ecuType: year > 2015 ? "Bosch EDC17CP20" : "Bosch EDC16U34",
+          readMethod: "OBD + BDM",
+          estimatedPower: `${Math.round(capacity * 0.075)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.28)}Nm`,
+          remapPotential: "+30-40% Power, +35-45% Torque",
+          tools: ["KESS V2", "KTAG", "BDM100"],
+        }
+      } else {
+        return {
+          ecuType: "Bosch MED17.5.5",
+          readMethod: "OBD",
+          estimatedPower: `${Math.round(capacity * 0.09)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.18)}Nm`,
+          remapPotential: "+20-30% Power, +25-35% Torque",
+          tools: ["KESS V2", "MPPS V21", "Galletto 1260"],
+        }
+      }
+    }
+
+    if (makeUpper.includes("FORD")) {
+      if (fuelType === "DIESEL") {
+        return {
+          ecuType: "Siemens SID807",
+          readMethod: "OBD + Bench",
+          estimatedPower: `${Math.round(capacity * 0.07)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.26)}Nm`,
+          remapPotential: "+25-35% Power, +30-40% Torque",
+          tools: ["KESS V2", "CMD Flash", "Dimsport New Genius"],
+        }
+      } else {
+        return {
+          ecuType: "Bosch ME7.9.6",
+          readMethod: "OBD",
+          estimatedPower: `${Math.round(capacity * 0.085)}hp`,
+          estimatedTorque: `${Math.round(capacity * 0.16)}Nm`,
+          remapPotential: "+15-25% Power, +20-30% Torque",
+          tools: ["KESS V2", "KTAG", "AutoTuner"],
+        }
+      }
+    }
+
+    // Default ECU info for other manufacturers
+    return {
+      ecuType: fuelType === "DIESEL" ? "Bosch EDC16/17 Series" : "Bosch ME7/MED17 Series",
+      readMethod: "OBD + Bench/BDM",
+      estimatedPower: `${Math.round(capacity * 0.08)}hp`,
+      estimatedTorque: `${Math.round(capacity * 0.22)}Nm`,
+      remapPotential: "+20-30% Power, +25-35% Torque",
+      tools: ["KESS V2", "KTAG", "CMD Flash"],
+    }
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { registration } = await request.json()
@@ -35,18 +126,40 @@ export async function POST(request: NextRequest) {
 
       const dvlaData = await response.json()
 
-      // Map DVLA response to our format
+      const engineSize = dvlaData.engineCapacity ? `${dvlaData.engineCapacity}cc` : "Unknown"
+      const ecuInfo = ECU_DATABASE.getEcuInfo(
+        dvlaData.make,
+        dvlaData.model,
+        dvlaData.yearOfManufacture,
+        engineSize,
+        dvlaData.fuelType,
+      )
+
       const vehicleData = {
+        // Basic DVLA data
         make: dvlaData.make,
         model: dvlaData.model,
         year: dvlaData.yearOfManufacture,
-        engineSize: dvlaData.engineCapacity ? `${dvlaData.engineCapacity}cc` : "Unknown",
+        engineSize,
         fuelType: dvlaData.fuelType,
         colour: dvlaData.colour,
         co2Emissions: dvlaData.co2Emissions,
         euroStatus: dvlaData.euroStatus,
         taxStatus: dvlaData.taxStatus,
         motStatus: dvlaData.motStatus,
+
+        // Enhanced ECU-specific data
+        ecuInfo: {
+          ecuType: ecuInfo.ecuType,
+          readMethod: ecuInfo.readMethod,
+          estimatedPower: ecuInfo.estimatedPower,
+          estimatedTorque: ecuInfo.estimatedTorque,
+          remapPotential: ecuInfo.remapPotential,
+          recommendedTools: ecuInfo.tools,
+          complexity: dvlaData.fuelType === "DIESEL" ? "Medium-High" : "Medium",
+          estimatedTime: "2-4 hours",
+          warranty: "Available with professional installation",
+        },
       }
 
       return NextResponse.json({
