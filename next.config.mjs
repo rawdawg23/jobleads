@@ -12,11 +12,11 @@ const nextConfig = {
   serverExternalPackages: [
     '@supabase/supabase-js',
     '@supabase/realtime-js',
-    '@supabase/auth-helpers-nextjs',
-    '@supabase/auth-helpers-shared',
     '@supabase/ssr',
     '@supabase/postgrest-js',
-    '@supabase/storage-js'
+    '@supabase/storage-js',
+    '@supabase/functions-js',
+    '@supabase/gotrue-js'
   ],
 }
 
