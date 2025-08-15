@@ -6,6 +6,20 @@ import { Resend } from "resend"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+async function createSafeClient() {
+  try {
+    const supabase = createClient()
+    // Test the client by checking if it's properly configured
+    if (!supabase) {
+      throw new Error("Supabase client could not be created")
+    }
+    return supabase
+  } catch (error) {
+    console.error("Failed to create Supabase client:", error)
+    throw new Error("Authentication service is temporarily unavailable")
+  }
+}
+
 export async function signIn(prevState: any, formData: FormData) {
   if (!formData) {
     return { error: "Form data is missing" }
@@ -18,9 +32,9 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: "Email and password are required" }
   }
 
-  const supabase = createClient()
-
   try {
+    const supabase = await createSafeClient()
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
@@ -50,7 +64,7 @@ export async function signIn(prevState: any, formData: FormData) {
       throw error
     }
     console.error("Login action error:", error instanceof Error ? error.message : String(error))
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error instanceof Error ? error.message : "An unexpected error occurred. Please try again." }
   }
 }
 
@@ -70,9 +84,9 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: "All required fields must be filled" }
   }
 
-  const supabase = createClient()
-
   try {
+    const supabase = await createSafeClient()
+
     const role =
       accountType === "Customer - Post Jobs"
         ? "customer"
@@ -80,13 +94,15 @@ export async function signUp(prevState: any, formData: FormData) {
           ? "dealer"
           : "customer"
 
+    const redirectUrl =
+      process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+      `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/profile/${role}`
+
     const { data, error } = await supabase.auth.signUp({
       email: email.toString(),
       password: password.toString(),
       options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
+        emailRedirectTo: redirectUrl,
         data: {
           first_name: firstName.toString(),
           last_name: lastName.toString(),
@@ -121,14 +137,20 @@ export async function signUp(prevState: any, formData: FormData) {
       throw error
     }
     console.error("Sign up action error:", error instanceof Error ? error.message : String(error))
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error instanceof Error ? error.message : "An unexpected error occurred. Please try again." }
   }
 }
 
 export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  redirect("/auth/login")
+  try {
+    const supabase = await createSafeClient()
+    await supabase.auth.signOut()
+    redirect("/auth/login")
+  } catch (error) {
+    console.error("Sign out error:", error)
+    // Still redirect to login even if sign out fails
+    redirect("/auth/login")
+  }
 }
 
 export async function requestPasswordReset(prevState: any, formData: FormData) {
@@ -142,9 +164,9 @@ export async function requestPasswordReset(prevState: any, formData: FormData) {
     return { error: "Email is required" }
   }
 
-  const supabase = createClient()
-
   try {
+    const supabase = await createSafeClient()
+
     const { error } = await supabase.auth.resetPasswordForEmail(email.toString(), {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/reset-password`,
     })
@@ -156,7 +178,7 @@ export async function requestPasswordReset(prevState: any, formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Password reset request error:", error instanceof Error ? error.message : String(error))
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error instanceof Error ? error.message : "An unexpected error occurred. Please try again." }
   }
 }
 
@@ -180,9 +202,9 @@ export async function resetPassword(prevState: any, formData: FormData) {
     return { error: "Password must be at least 8 characters long" }
   }
 
-  const supabase = createClient()
-
   try {
+    const supabase = await createSafeClient()
+
     const { error } = await supabase.auth.updateUser({
       password: password.toString(),
     })
@@ -194,6 +216,6 @@ export async function resetPassword(prevState: any, formData: FormData) {
     return { success: true }
   } catch (error) {
     console.error("Password reset error:", error instanceof Error ? error.message : String(error))
-    return { error: "An unexpected error occurred. Please try again." }
+    return { error: error instanceof Error ? error.message : "An unexpected error occurred. Please try again." }
   }
 }
