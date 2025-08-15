@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function AdminUpgradePage() {
+function AdminUpgradeContent() {
   const [email, setEmail] = useState("joshuahodson64@gmail.com")
   const [password, setPassword] = useState("ebony2025")
   const [loading, setLoading] = useState(false)
@@ -99,5 +98,19 @@ export default function AdminUpgradePage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function AdminUpgradePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div>Loading...</div>
+        </div>
+      }
+    >
+      <AdminUpgradeContent />
+    </Suspense>
   )
 }
