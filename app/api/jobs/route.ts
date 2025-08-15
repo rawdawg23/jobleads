@@ -1,46 +1,54 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { JobModel, PaymentModel } from "@/lib/redis/extended-models"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const result = await AuthService.getCurrentUser()
+    const supabase = await createClient()
 
-    if (!result) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { user } = result
     const { registration, postcode, serviceType, description, requiredTools, vehicleData } = await request.json()
 
     if (!registration || !postcode || !serviceType || !description || !vehicleData) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Create job record
-    const job = await JobModel.create({
-      customerId: user.id,
-      registration: registration.toUpperCase(),
-      make: vehicleData.make,
-      model: vehicleData.model,
-      year: vehicleData.year,
-      engineSize: vehicleData.engineSize,
-      fuelType: vehicleData.fuelType,
-      serviceType,
-      description,
-      requiredTools: requiredTools || [],
-      customerPostcode: postcode.toUpperCase(),
-      status: "pending",
-    })
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .insert({
+        customer_id: user.id,
+        registration: registration.toUpperCase(),
+        make: vehicleData.make,
+        model: vehicleData.model,
+        year: vehicleData.year,
+        engine_size: vehicleData.engineSize,
+        fuel_type: vehicleData.fuelType,
+        service_type: serviceType,
+        description,
+        required_tools: requiredTools || [],
+        customer_postcode: postcode.toUpperCase(),
+        status: "pending",
+      })
+      .select()
+      .single()
 
-    // Create payment record
-    await PaymentModel.create({
-      userId: user.id,
+    if (jobError || !job) {
+      return NextResponse.json({ error: "Failed to create job" }, { status: 500 })
+    }
+
+    await supabase.from("payments").insert({
+      user_id: user.id,
       amount: 5.0,
       currency: "GBP",
-      paymentType: "job_posting",
-      referenceId: job.id,
+      payment_type: "job_posting",
+      reference_id: job.id,
       status: "pending",
     })
 
@@ -56,19 +64,31 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await AuthService.getCurrentUser()
+    const supabase = await createClient()
 
-    if (!result) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { user } = result
     let jobs = []
 
-    if (user.role === "customer") {
-      jobs = await JobModel.findByCustomer(user.id)
+    if (user.user_metadata?.role === "customer") {
+      const { data } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false })
+
+      jobs = data || []
     } else {
-      jobs = await JobModel.findAll()
+      const { data } = await supabase.from("jobs").select("*").order("created_at", { ascending: false })
+
+      jobs = data || []
     }
 
     return NextResponse.json({ jobs })
