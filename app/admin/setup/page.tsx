@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 
+export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 function AdminSetupContent() {
