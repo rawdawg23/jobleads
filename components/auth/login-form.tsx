@@ -20,7 +20,7 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+      className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
     >
       {pending ? (
         <>
@@ -49,24 +49,24 @@ export function LoginForm() {
   }, [state, router])
 
   return (
-    <Card className="w-full shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+    <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20 hover:shadow-3xl transition-all duration-500">
       <CardHeader className="text-center pb-6">
-        <CardTitle className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</CardTitle>
-        <CardDescription className="text-lg text-gray-600">
+        <CardTitle className="text-3xl font-bold text-foreground mb-2">Welcome Back</CardTitle>
+        <CardDescription className="text-lg text-foreground/70">
           Sign in to access your CTEK JOB LEADS account
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form action={formAction} className="space-y-6">
           {state?.error && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
+            <Alert variant="destructive" className="border-red-200/50 bg-red-50/80 backdrop-blur-sm">
               <AlertDescription className="text-red-800">{state.error}</AlertDescription>
             </Alert>
           )}
 
           <div className="space-y-3">
-            <Label htmlFor="email" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Mail className="h-4 w-4" />
+            <Label htmlFor="email" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
               Email Address
             </Label>
             <Input
@@ -75,19 +75,19 @@ export function LoginForm() {
               type="email"
               placeholder="you@example.com"
               required
-              className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+              className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
             />
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Lock className="h-4 w-4" />
+              <Label htmlFor="password" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Lock className="h-4 w-4 text-primary" />
                 Password
               </Label>
               <Link
                 href="/auth/forgot-password"
-                className="text-sm text-purple-600 hover:text-purple-700 transition-colors duration-200"
+                className="text-sm text-primary hover:text-secondary transition-colors duration-300"
               >
                 Forgot Password?
               </Link>
@@ -98,19 +98,19 @@ export function LoginForm() {
               type="password"
               required
               placeholder="Enter your password"
-              className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+              className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
             />
           </div>
 
           <SubmitButton />
         </form>
 
-        <div className="text-center pt-4 border-t border-gray-200">
-          <p className="text-gray-600">
+        <div className="text-center pt-4 border-t border-white/20">
+          <p className="text-foreground/70">
             Don't have an account?{" "}
             <Link
               href="/auth/register"
-              className="font-semibold text-purple-600 hover:text-purple-700 transition-colors duration-200"
+              className="font-semibold text-primary hover:text-secondary transition-colors duration-300"
             >
               Sign up here
             </Link>

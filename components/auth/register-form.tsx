@@ -19,7 +19,7 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 text-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+      className="w-full btn-primary py-3 text-lg font-medium transition-all duration-300 hover:scale-105"
     >
       {pending ? (
         <>
@@ -40,47 +40,47 @@ export function RegisterForm() {
   const [state, formAction] = useActionState(signUp, null)
 
   return (
-    <Card className="w-full shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+    <Card className="w-full shadow-2xl border-0 bg-white/70 backdrop-blur-xl border border-white/20 hover:shadow-3xl transition-all duration-500">
       <CardHeader className="text-center pb-6">
-        <CardTitle className="text-3xl font-bold text-gray-900 mb-2">Create Account</CardTitle>
-        <CardDescription className="text-lg text-gray-600">
+        <CardTitle className="text-3xl font-bold text-foreground mb-2">Create Account</CardTitle>
+        <CardDescription className="text-lg text-foreground/70">
           Join the CTEK JOB LEADS platform and connect with certified professionals
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form action={formAction} className="space-y-6">
           {state?.error && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
+            <Alert variant="destructive" className="border-red-200/50 bg-red-50/80 backdrop-blur-sm">
               <AlertDescription className="text-red-800">{state.error}</AlertDescription>
             </Alert>
           )}
 
           {state?.success && (
-            <Alert className="border-green-200 bg-green-50">
+            <Alert className="border-green-200/50 bg-green-50/80 backdrop-blur-sm">
               <AlertDescription className="text-green-800">{state.success}</AlertDescription>
             </Alert>
           )}
 
           <div className="space-y-3">
-            <Label htmlFor="accountType" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <User className="h-4 w-4" />
+            <Label htmlFor="accountType" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
               Account Type
             </Label>
             <Select name="accountType" defaultValue="Customer - Post Jobs">
-              <SelectTrigger className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/90 backdrop-blur-xl border-white/20">
                 <SelectItem value="Customer - Post Jobs">
                   <div className="flex flex-col">
                     <span className="font-medium">Customer - Post Jobs</span>
-                    <span className="text-sm text-gray-500">Find certified dealers for ECU remapping</span>
+                    <span className="text-sm text-foreground/60">Find certified dealers for ECU remapping</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="Dealer - Apply for Jobs">
                   <div className="flex flex-col">
                     <span className="font-medium">Dealer - Apply for Jobs</span>
-                    <span className="text-sm text-gray-500">Apply for ECU remapping jobs</span>
+                    <span className="text-sm text-foreground/60">Apply for ECU remapping jobs</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -89,34 +89,34 @@ export function RegisterForm() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-3">
-              <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700">
+              <Label htmlFor="firstName" className="text-sm font-semibold text-foreground">
                 First Name
               </Label>
               <Input
                 id="firstName"
                 name="firstName"
                 required
-                className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
                 placeholder="Enter your first name"
               />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="lastName" className="text-sm font-semibold text-gray-700">
+              <Label htmlFor="lastName" className="text-sm font-semibold text-foreground">
                 Last Name
               </Label>
               <Input
                 id="lastName"
                 name="lastName"
                 required
-                className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
                 placeholder="Enter your last name"
               />
             </div>
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="email" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Mail className="h-4 w-4" />
+            <Label htmlFor="email" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
               Email Address
             </Label>
             <Input
@@ -125,13 +125,13 @@ export function RegisterForm() {
               type="email"
               placeholder="you@example.com"
               required
-              className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+              className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
             />
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="phone" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Phone className="h-4 w-4" />
+            <Label htmlFor="phone" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Phone className="h-4 w-4 text-primary" />
               Phone Number
             </Label>
             <Input
@@ -139,13 +139,13 @@ export function RegisterForm() {
               name="phone"
               type="tel"
               placeholder="Your contact number"
-              className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+              className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
             />
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="password" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Lock className="h-4 w-4" />
+            <Label htmlFor="password" className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Lock className="h-4 w-4 text-primary" />
               Password
             </Label>
             <Input
@@ -154,19 +154,19 @@ export function RegisterForm() {
               type="password"
               required
               placeholder="Create a secure password"
-              className="h-12 border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+              className="h-12 bg-white/60 backdrop-blur-sm border-white/30 focus:border-primary/50 focus:ring-primary/30 transition-all duration-300"
             />
           </div>
 
           <SubmitButton />
         </form>
 
-        <div className="text-center pt-4 border-t border-gray-200">
-          <p className="text-gray-600">
+        <div className="text-center pt-4 border-t border-white/20">
+          <p className="text-foreground/70">
             Already have an account?{" "}
             <Link
               href="/auth/login"
-              className="font-semibold text-purple-600 hover:text-purple-700 transition-colors duration-200"
+              className="font-semibold text-primary hover:text-secondary transition-colors duration-300"
             >
               Sign in here
             </Link>
