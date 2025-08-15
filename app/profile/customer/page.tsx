@@ -33,6 +33,9 @@ interface CustomerStats {
   averageRating: number
 }
 
+export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
+
 export default function CustomerProfilePage() {
   const { user, loading, signOut, isCustomer } = useAuth()
   const router = useRouter()
