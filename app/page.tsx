@@ -212,16 +212,38 @@ export default function HomePage() {
     }
 
     try {
-      const [jobsResult, dealersResult, remapsResult] = await Promise.all([
-        supabase.from("jobs").select("id", { count: "exact" }).eq("status", "active"),
-        supabase.from("users").select("id", { count: "exact" }).eq("role", "dealer"),
-        supabase.from("dyno_sessions").select("id", { count: "exact" }).eq("status", "completed"),
-      ])
+      let totalJobs = 0
+      let activeDealers = 0
+      let completedRemaps = 0
+
+      try {
+        const jobsResult = await supabase.from("jobs").select("id", { count: "exact" }).eq("status", "active")
+        totalJobs = jobsResult.count || 0
+      } catch (error) {
+        console.error("Error fetching jobs count:", error)
+      }
+
+      try {
+        const dealersResult = await supabase.from("users").select("id", { count: "exact" }).eq("role", "dealer")
+        activeDealers = dealersResult.count || 0
+      } catch (error) {
+        console.error("Error fetching dealers count:", error)
+      }
+
+      try {
+        const remapsResult = await supabase
+          .from("dyno_sessions")
+          .select("id", { count: "exact" })
+          .eq("status", "completed")
+        completedRemaps = remapsResult.count || 0
+      } catch (error) {
+        console.error("Error fetching remaps count:", error)
+      }
 
       setStats({
-        totalJobs: jobsResult.count || 0,
-        activeDealers: dealersResult.count || 0,
-        completedRemaps: remapsResult.count || 0,
+        totalJobs,
+        activeDealers,
+        completedRemaps,
       })
     } catch (error) {
       console.error("Error fetching stats:", error)
@@ -236,74 +258,93 @@ export default function HomePage() {
   useEffect(() => {
     if (!isInitialized) return
 
-    fetchLiveDynoData()
-    fetchNearestCarMeet()
-    fetchStats()
+    const initializeData = async () => {
+      try {
+        await Promise.allSettled([fetchLiveDynoData(), fetchNearestCarMeet(), fetchStats()])
+      } catch (error) {
+        console.error("[v0] Error during initial data fetch:", error)
+      }
+    }
+
+    initializeData()
 
     if (!supabase) return
 
-    const dynoChannel = supabase
-      .channel("dyno-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "dyno_sessions",
-        },
-        () => {
-          fetchLiveDynoData()
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "sensor_readings",
-        },
-        () => {
-          fetchLiveDynoData()
-        },
-      )
-      .subscribe()
+    try {
+      const dynoChannel = supabase
+        .channel("dyno-updates")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "dyno_sessions",
+          },
+          () => {
+            fetchLiveDynoData().catch((error) => console.error("Error in dyno subscription:", error))
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "sensor_readings",
+          },
+          () => {
+            fetchLiveDynoData().catch((error) => console.error("Error in sensor subscription:", error))
+          },
+        )
+        .subscribe()
 
-    const meetChannel = supabase
-      .channel("meet-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "car_meet_locations",
-        },
-        () => {
-          fetchNearestCarMeet()
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "car_meet_attendees",
-        },
-        () => {
-          fetchNearestCarMeet()
-        },
-      )
-      .subscribe()
+      const meetChannel = supabase
+        .channel("meet-updates")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "car_meet_locations",
+          },
+          () => {
+            fetchNearestCarMeet().catch((error) => console.error("Error in meet subscription:", error))
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "car_meet_attendees",
+          },
+          () => {
+            fetchNearestCarMeet().catch((error) => console.error("Error in attendee subscription:", error))
+          },
+        )
+        .subscribe()
 
-    const dynoInterval = setInterval(fetchLiveDynoData, 30000)
-    const statsInterval = setInterval(fetchStats, 300000)
+      const dynoInterval = setInterval(() => {
+        fetchLiveDynoData().catch((error) => console.error("Error in dyno interval:", error))
+      }, 60000) // Every minute instead of 30 seconds
 
-    return () => {
-      if (supabase) {
-        supabase.removeChannel(dynoChannel)
-        supabase.removeChannel(meetChannel)
+      const statsInterval = setInterval(() => {
+        fetchStats().catch((error) => console.error("Error in stats interval:", error))
+      }, 600000) // Every 10 minutes instead of 5 minutes
+
+      return () => {
+        try {
+          if (supabase) {
+            supabase.removeChannel(dynoChannel)
+            supabase.removeChannel(meetChannel)
+          }
+          clearInterval(dynoInterval)
+          clearInterval(statsInterval)
+        } catch (error) {
+          console.error("[v0] Error during cleanup:", error)
+        }
       }
-      clearInterval(dynoInterval)
-      clearInterval(statsInterval)
+    } catch (error) {
+      console.error("[v0] Error setting up subscriptions:", error)
     }
   }, [isInitialized, supabase])
 
