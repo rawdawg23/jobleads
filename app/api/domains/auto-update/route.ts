@@ -1,10 +1,15 @@
 import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+import { checkDomainStatus } from "@/utils/checkDomainStatus"
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ success: false, error: "Missing Supabase configuration" }, { status: 500 })
+    }
+
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
     const { domain, force = false } = await request.json()
 
     // Get current domain from database
@@ -102,6 +107,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ success: false, error: "Missing Supabase configuration" }, { status: 500 })
+    }
+
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+
     // Get all domains from database
     const { data: domains, error: fetchError } = await supabase.from("domains").select("*")
 
@@ -133,14 +144,15 @@ export async function PUT(request: NextRequest) {
                 previous_status: domain.status,
               },
             })
-            .eq("id", domain.id)
+            .eq("domain", domain.domain)
             .select()
             .single()
 
           if (updateError) throw updateError
 
           results.push({
-            domain: domain.domain,
+            success: true,
+            domain: updatedDomain,
             updated: true,
             changes: {
               status: domain.status !== domainStatus.status,
@@ -150,41 +162,25 @@ export async function PUT(request: NextRequest) {
           })
         } else {
           results.push({
-            domain: domain.domain,
+            success: true,
+            domain: domain,
             updated: false,
             message: "No changes detected",
           })
         }
       } catch (error) {
+        console.error("Error updating domain:", domain.domain, error)
         results.push({
+          success: false,
           domain: domain.domain,
-          error: error.message,
-          updated: false,
+          error: "Failed to update domain",
         })
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      results,
-      total_domains: domains.length,
-      updated_count: results.filter((r) => r.updated).length,
-    })
+    return NextResponse.json({ success: true, results })
   } catch (error) {
     console.error("Bulk auto-update error:", error)
     return NextResponse.json({ success: false, error: "Failed to bulk auto-update domains" }, { status: 500 })
-  }
-}
-
-async function checkDomainStatus(domain: string) {
-  // Simulate domain status checking (replace with real checks)
-  const isAvailable = Math.random() > 0.7
-  const hasSSL = Math.random() > 0.3
-  const hasDNS = Math.random() > 0.2
-
-  return {
-    status: isAvailable ? "available" : "registered",
-    ssl_status: hasSSL ? "active" : "inactive",
-    dns_status: hasDNS ? "configured" : "not_configured",
   }
 }
