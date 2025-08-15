@@ -13,7 +13,10 @@ const nextConfig = {
     '@supabase/supabase-js',
     '@supabase/realtime-js',
     '@supabase/auth-helpers-nextjs',
-    '@supabase/auth-helpers-shared'
+    '@supabase/auth-helpers-shared',
+    '@supabase/ssr',
+    '@supabase/postgrest-js',
+    '@supabase/storage-js'
   ],
 }
 
