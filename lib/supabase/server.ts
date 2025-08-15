@@ -12,6 +12,8 @@ export const createClient = () => {
           Promise.resolve({ data: null, error: { message: "Build time - Supabase not available" } }),
         signUp: () => Promise.resolve({ data: null, error: { message: "Build time - Supabase not available" } }),
         signOut: () => Promise.resolve({ error: null }),
+        exchangeCodeForSession: () =>
+          Promise.resolve({ data: { user: null }, error: { message: "Build time - Supabase not available" } }),
       },
       from: (table: string) => ({
         select: (columns: string) => ({
@@ -48,6 +50,8 @@ export const createClient = () => {
         signInWithPassword: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signUp: () => Promise.resolve({ data: null, error: { message: "Supabase not configured" } }),
         signOut: () => Promise.resolve({ error: null }),
+        exchangeCodeForSession: () =>
+          Promise.resolve({ data: { user: null }, error: { message: "Supabase not configured" } }),
       },
       from: (table: string) => ({
         select: (columns: string) => ({

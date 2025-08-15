@@ -6,6 +6,18 @@ export default async function AuthCallback({
 }: {
   searchParams: { code?: string }
 }) {
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    // During build time, return a simple loading page
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Processing authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
   const code = searchParams.code
 
   if (code) {
@@ -25,13 +37,13 @@ export default async function AuthCallback({
 
         switch (role) {
           case "admin":
-            redirect("/admin")
+            redirect("/profile/admin")
             break
           case "dealer":
-            redirect("/dealer")
+            redirect("/profile/dealer")
             break
           default:
-            redirect("/dashboard")
+            redirect("/profile/customer")
         }
       }
     } catch (error) {
@@ -40,5 +52,5 @@ export default async function AuthCallback({
     }
   }
 
-  redirect("/dashboard")
+  redirect("/profile/customer")
 }
