@@ -20,6 +20,11 @@ const globalAuthState = globalThis.__GLOBAL_AUTH_STATE__ || {
 }
 
 function ensureInitialized() {
+  if (typeof window === "undefined") {
+    console.log("[v0] Skipping global auth initialization during build/SSR")
+    return
+  }
+
   if (globalThis.__GLOBAL_AUTH_INITIALIZED__) {
     console.log("[v0] Global auth already initialized, skipping...")
     return
@@ -35,7 +40,7 @@ function ensureInitialized() {
     console.log("[v0] Global Supabase client created")
   }
 
-  if (!globalAuthSubscription) {
+  if (globalSupabase && !globalAuthSubscription) {
     globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log("[v0] Global auth state change:", event)
 
@@ -56,6 +61,10 @@ function ensureInitialized() {
 }
 
 export function subscribeToGlobalAuth(callback: (state: any) => void) {
+  if (typeof window === "undefined") {
+    return () => {}
+  }
+
   ensureInitialized()
 
   globalStateListeners.add(callback)
@@ -68,11 +77,33 @@ export function subscribeToGlobalAuth(callback: (state: any) => void) {
 }
 
 export function getGlobalAuthState() {
+  if (typeof window === "undefined") {
+    return { user: null, session: null, loading: false, initialized: false }
+  }
+
   ensureInitialized()
   return { ...globalAuthState }
 }
 
 export function getGlobalSupabase() {
+  if (typeof window === "undefined") {
+    return {
+      auth: {
+        signInWithPassword: async () => ({ data: null, error: new Error("Not available during build") }),
+        signUp: async () => ({ data: null, error: new Error("Not available during build") }),
+        signOut: async () => ({ error: new Error("Not available during build") }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: new Error("Not available during build") }),
+          }),
+        }),
+        insert: async () => ({ data: null, error: new Error("Not available during build") }),
+      }),
+    } as any
+  }
+
   ensureInitialized()
   return globalSupabase
 }
