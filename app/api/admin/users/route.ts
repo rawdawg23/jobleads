@@ -1,30 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { AuthService } from "@/lib/redis/auth"
-import { redisClient } from "@/lib/redis/client"
+import { createClient } from "@supabase/supabase-js"
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is authenticated and is admin
-    const result = await AuthService.getCurrentUser()
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
 
-    if (!result || result.user.role !== "admin") {
+    // Get current user from auth header or session
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get all user keys
-    const userKeys = await redisClient.keys("user:*")
-    const users = []
+    const token = authHeader.replace("Bearer ", "")
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token)
 
-    // Fetch all users
-    for (const key of userKeys) {
-      const userData = await redisClient.get(key)
-      if (userData) {
-        users.push(JSON.parse(userData as string))
-      }
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Sort by creation date (newest first)
-    users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    // Get user profile to check role
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profileError || profile.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { data: users, error: usersError } = await supabase
+      .from("users")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (usersError) {
+      console.error("Error fetching users:", usersError)
+      return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
+    }
 
     return NextResponse.json({ users })
   } catch (error) {
