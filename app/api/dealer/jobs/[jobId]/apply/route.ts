@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function POST(request: NextRequest, { params }: { params: { jobId: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   try {
     const supabase = createClient()
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: { jobId: 
       return NextResponse.json({ error: "Dealer profile not found or not active" }, { status: 404 })
     }
 
-    const { jobId } = params
+    const { jobId } = await params
 
     // Check if job exists and is available
     const { data: job, error: jobError } = await supabase

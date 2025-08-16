@@ -38,7 +38,7 @@ async function getCoordinatesFromPostcode(postcode: string): Promise<{ lat: numb
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { jobId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   try {
     const cookieStore = cookies()
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
       return NextResponse.json({ error: "Dealer profile not found or not active" }, { status: 404 })
     }
 
-    const { jobId } = params
+    const { jobId } = await params
 
     const { data: job, error: jobError } = await supabase
       .from("jobs")

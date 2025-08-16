@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest, { params }: { params: { dealerId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ dealerId: string }> }) {
   try {
     const supabase = await createClient()
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { dealerId
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const { dealerId } = params
+    const { dealerId } = await params
 
     const { data: dealer, error: dealerError } = await supabase
       .from("dealers")
