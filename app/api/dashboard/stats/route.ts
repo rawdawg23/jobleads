@@ -106,7 +106,9 @@ export async function GET(request: NextRequest) {
         const activeApplications = applications.filter((app: { job?: { status: string } | null }) =>
           ["accepted", "in_progress"].includes(app.job?.status || ""),
         )
-        const thisMonthApplications = applications.filter((app) => new Date(app.created_at) > new Date(thirtyDaysAgo))
+        const thisMonthApplications = applications.filter(
+          (app: { created_at: string }) => new Date(app.created_at) > new Date(thirtyDaysAgo),
+        )
 
         stats = {
           totalJobs: applications.length,
