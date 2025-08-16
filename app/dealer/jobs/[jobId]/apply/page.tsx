@@ -12,7 +12,7 @@ import { Car, MapPin, Wrench, Loader2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
-export default function ApplyJobPage({ params }: { params: { jobId: string } }) {
+export default function ApplyJobPage({ params }: { params: Promise<{ jobId: string }> }) {
   const [loading, setLoading] = useState(true)
   const [job, setJob] = useState<any>(null)
   const [dealer, setDealer] = useState<any>(null)
@@ -23,6 +23,8 @@ export default function ApplyJobPage({ params }: { params: { jobId: string } }) 
   useEffect(() => {
     async function loadData() {
       try {
+        const { jobId } = await params
+
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -44,7 +46,7 @@ export default function ApplyJobPage({ params }: { params: { jobId: string } }) 
             *,
             users!jobs_customer_id_fkey(first_name, last_name, email)
           `)
-          .eq("id", params.jobId)
+          .eq("id", jobId)
           .single()
 
         if (!jobData || jobData.status !== "open") {
@@ -73,7 +75,7 @@ export default function ApplyJobPage({ params }: { params: { jobId: string } }) 
     }
 
     loadData()
-  }, [params.jobId, router, supabase])
+  }, [params, router, supabase])
 
   if (loading) {
     return (
