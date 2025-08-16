@@ -7,11 +7,12 @@ export const runtime = "nodejs"
 export default async function AuthCallback({
   searchParams,
 }: {
-  searchParams: { code?: string; type?: string; next?: string }
+  searchParams: Promise<{ code?: string; type?: string; next?: string }>
 }) {
-  const code = searchParams.code
-  const type = searchParams.type // This will be 'recovery' for password reset
-  const next = searchParams.next // Also check for next parameter
+  const params = await searchParams
+  const code = params.code
+  const type = params.type // This will be 'recovery' for password reset
+  const next = params.next // Also check for next parameter
 
   if (code) {
     try {
