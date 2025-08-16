@@ -14,7 +14,7 @@ import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
-export default function ChatPage({ params }: { params: { jobId: string } }) {
+export default function ChatPage({ params }: { params: Promise<{ jobId: string }> }) {
   const [loading, setLoading] = useState(true)
   const [job, setJob] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
@@ -24,10 +24,21 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [sending, setSending] = useState(false)
+  const [jobId, setJobId] = useState<string>("")
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    async function getParams() {
+      const resolvedParams = await params
+      setJobId(resolvedParams.jobId)
+    }
+    getParams()
+  }, [params])
+
+  useEffect(() => {
+    if (!jobId) return
+
     async function loadData() {
       try {
         const {
@@ -51,7 +62,7 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
             *,
             users!jobs_customer_id_fkey(first_name, last_name, email)
           `)
-          .eq("id", params.jobId)
+          .eq("id", jobId)
           .single()
 
         if (!jobData) {
@@ -60,7 +71,6 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
         }
         setJob(jobData)
 
-        // Check access permissions
         let dealerIdValue: string | null = null
         if (profileData.role === "customer" && jobData.customer_id !== user.id) {
           router.push("/messages")
@@ -77,7 +87,7 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
           const { data: application } = await supabase
             .from("job_applications")
             .select("id")
-            .eq("job_id", params.jobId)
+            .eq("job_id", jobId)
             .eq("dealer_id", dealer.id)
             .single()
 
@@ -94,7 +104,7 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
             users!messages_sender_id_fkey(first_name, last_name, role),
             dealers(business_name)
           `)
-          .eq("job_id", params.jobId)
+          .eq("job_id", jobId)
           .order("created_at", { ascending: true })
 
         setMessages(messagesData || [])
@@ -114,25 +124,24 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
     }
 
     loadData()
-  }, [params.jobId, router, supabase])
+  }, [jobId, router, supabase])
 
   useEffect(() => {
-    if (!params.jobId) return
+    if (!jobId) return
 
     const messageSubscription = supabase
-      .channel(`messages-${params.jobId}`)
+      .channel(`messages-${jobId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `job_id=eq.${params.jobId}`,
+          filter: `job_id=eq.${jobId}`,
         },
         async (payload) => {
           console.log("[v0] New message received:", payload.new)
 
-          // Fetch the complete message with user data
           const { data: newMessageData } = await supabase
             .from("messages")
             .select(`
@@ -153,20 +162,20 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
     return () => {
       messageSubscription.unsubscribe()
     }
-  }, [params.jobId, supabase])
+  }, [jobId, supabase])
 
   useEffect(() => {
-    if (!params.jobId) return
+    if (!jobId) return
 
     const jobSubscription = supabase
-      .channel(`job-${params.jobId}`)
+      .channel(`job-${jobId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "jobs",
-          filter: `id=eq.${params.jobId}`,
+          filter: `id=eq.${jobId}`,
         },
         (payload) => {
           console.log("[v0] Job status updated:", payload.new)
@@ -178,7 +187,7 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
     return () => {
       jobSubscription.unsubscribe()
     }
-  }, [params.jobId, supabase])
+  }, [jobId, supabase])
 
   if (loading) {
     return (
@@ -212,7 +221,7 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
       if (!user) return
 
       const messageData = {
-        job_id: params.jobId,
+        job_id: jobId,
         sender_id: user.id,
         content: newMessage.trim(),
         dealer_id: dealerId || null,
@@ -264,7 +273,6 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
       </div>
 
       <div className="grid gap-6">
-        {/* Messages */}
         <Card className="min-h-[400px]">
           <CardContent className="p-6">
             <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
@@ -301,7 +309,6 @@ export default function ChatPage({ params }: { params: { jobId: string } }) {
               )}
             </div>
 
-            {/* Message Input */}
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <Input
                 value={newMessage}
