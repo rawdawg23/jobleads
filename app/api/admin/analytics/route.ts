@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const postcodeCounts: { [key: string]: number } = {}
     if (postcodesResult.data && postcodesResult.data.length > 0) {
-      postcodesResult.data.forEach((job) => {
+      postcodesResult.data.forEach((job: { customer_postcode: string | null }) => {
         if (job.customer_postcode) {
           const area = job.customer_postcode.split(" ")[0]
           postcodeCounts[area] = (postcodeCounts[area] || 0) + 1
