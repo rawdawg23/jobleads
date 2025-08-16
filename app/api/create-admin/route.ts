@@ -93,7 +93,11 @@ ON CONFLICT (id) DO NOTHING;
         )
       }
 
-      signupData.user = authData.user
+      const updatedSignupData = {
+        ...signupData,
+        user: authData.user,
+      }
+      Object.assign(signupData, updatedSignupData)
     }
 
     if (!signupData.user) {
