@@ -36,8 +36,8 @@ interface Payment {
   created_at: string
   updated_at: string
   user: {
-    first_name: string
-    last_name: string
+    firstName: string
+    lastName: string
     email: string
   }
   job?: {
@@ -111,8 +111,8 @@ function AdminPaymentsContent() {
       filtered = filtered.filter(
         (payment) =>
           payment.user.email.toLowerCase().includes(search) ||
-          payment.user.first_name.toLowerCase().includes(search) ||
-          payment.user.last_name.toLowerCase().includes(search) ||
+          payment.user.firstName.toLowerCase().includes(search) ||
+          payment.user.lastName.toLowerCase().includes(search) ||
           payment.bank_transfer_reference.toLowerCase().includes(search) ||
           (payment.job && payment.job.registration.toLowerCase().includes(search)) ||
           (payment.dealer && payment.dealer.business_name.toLowerCase().includes(search)),
@@ -192,7 +192,7 @@ function AdminPaymentsContent() {
             <span className="text-2xl font-bold text-slate-900">Payment Management</span>
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-slate-600">Admin: {user.first_name}</span>
+            <span className="text-slate-600">Admin: {user.firstName}</span>
             <Button variant="outline" asChild>
               <Link href="/admin">Admin Dashboard</Link>
             </Button>
@@ -344,7 +344,7 @@ function AdminPaymentsContent() {
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {payment.user.first_name} {payment.user.last_name}
+                            {payment.user.firstName} {payment.user.lastName}
                           </div>
                           <div className="text-sm text-slate-600">{payment.user.email}</div>
                         </div>
@@ -413,7 +413,7 @@ function PaymentDetailsDialog({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span className="font-medium">Customer:</span> {payment.user.first_name} {payment.user.last_name}
+          <span className="font-medium">Customer:</span> {payment.user.firstName} {payment.user.lastName}
         </div>
         <div>
           <span className="font-medium">Email:</span> {payment.user.email}
