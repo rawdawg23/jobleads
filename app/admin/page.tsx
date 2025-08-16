@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
         .gte("created_at", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
         .eq("status", "completed")
 
-      const monthlyRevenue = paymentsData?.reduce((sum, payment) => sum + Number(payment.amount), 0) || 0
+      const monthlyRevenue = paymentsData?.reduce((sum: number, payment) => sum + Number(payment.amount), 0) || 0
 
       setStats({
         totalUsers: usersResult.count || 0,
