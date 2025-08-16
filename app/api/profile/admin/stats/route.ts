@@ -18,24 +18,47 @@ export async function GET(request: NextRequest) {
     // Get user profile to verify role
     const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
 
-    if (!profile || profile.role !== "Admin") {
+    if (!profile || profile.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Fetch admin statistics
-    const { data: users } = await supabase.from("users").select("id, role")
-    const { data: jobs } = await supabase.from("jobs").select("id, status, customer_price")
-    const { data: dealers } = await supabase.from("dealers").select("id")
+    const [usersResult, jobsResult, dealersResult, paymentsResult] = await Promise.allSettled([
+      supabase.from("users").select("id, role"),
+      supabase.from("jobs").select("id, status, customer_price, dealer_quote"),
+      supabase.from("dealers").select("id, status"),
+      supabase.from("payments").select("id, amount, status, payment_type"),
+    ])
+
+    const users = usersResult.status === "fulfilled" ? usersResult.value.data || [] : []
+    const jobs = jobsResult.status === "fulfilled" ? jobsResult.value.data || [] : []
+    const dealers = dealersResult.status === "fulfilled" ? dealersResult.value.data || [] : []
+    const payments = paymentsResult.status === "fulfilled" ? paymentsResult.value.data || [] : []
+
+    const completedPayments = payments.filter((payment) => payment.status === "completed")
+    const totalRevenue = completedPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+    const platformRevenue = jobs.reduce((sum, job) => sum + (job.customer_price || 0), 0) + totalRevenue * 0.03 // 3% platform fee on transactions
+
+    const pendingDealers = dealers.filter((dealer) => dealer.status === "pending")
+
+    const totalRequests = users.length + jobs.length + dealers.length + payments.length
+    const successfulOperations = users.length + jobs.length + dealers.length + completedPayments.length
+    const systemHealth = totalRequests > 0 ? Math.round((successfulOperations / totalRequests) * 100) : 100
 
     const stats = {
-      totalUsers: users?.length || 0,
-      totalDealers: users?.filter((user) => user.role === "Dealer").length || 0,
-      totalCustomers: users?.filter((user) => user.role === "Customer").length || 0,
-      totalJobs: jobs?.length || 0,
-      totalRevenue: jobs?.reduce((sum, job) => sum + (job.customer_price || 0), 0) * 0.1 || 0, // 10% platform fee
-      activeJobs: jobs?.filter((job) => ["open", "accepted", "in_progress"].includes(job.status)).length || 0,
-      pendingApprovals: dealers?.filter((dealer) => !dealer.id).length || 0, // TODO: Add approval status
-      systemHealth: 98, // TODO: Calculate from actual system metrics
+      totalUsers: users.length,
+      totalDealers: users.filter((user) => user.role === "dealer").length,
+      totalCustomers: users.filter((user) => user.role === "customer").length,
+      totalJobs: jobs.length,
+      totalRevenue: platformRevenue,
+      activeJobs: jobs.filter((job) => ["pending", "accepted", "in_progress"].includes(job.status)).length,
+      pendingApprovals: pendingDealers.length,
+      systemHealth: systemHealth,
+      completedJobs: jobs.filter((job) => job.status === "completed").length,
+      averageJobValue:
+        jobs.length > 0
+          ? jobs.reduce((sum, job) => sum + (job.dealer_quote || job.customer_price || 0), 0) / jobs.length
+          : 0,
+      activeDealers: dealers.filter((dealer) => dealer.status === "active").length,
     }
 
     return NextResponse.json({ stats })

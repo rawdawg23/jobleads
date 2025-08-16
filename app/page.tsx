@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Menu, X, Zap, Gauge, MapPin, Users, TrendingUp, Settings, Car, Activity } from "lucide-react"
 
 export default function HomePage() {
+  const hasInitialized = useRef(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dynoData, setDynoData] = useState({
     power: 420 + Math.random() * 50,
@@ -30,6 +31,68 @@ export default function HomePage() {
   })
   const [isScanning, setIsScanning] = useState(false)
 
+  const fetchAllData = useCallback(async () => {
+    try {
+      const [dynoResponse, carMeetResponse, statsResponse] = await Promise.allSettled([
+        // Simulate dyno data fetch
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                power: 420 + Math.random() * 50,
+                torque: 580 + Math.random() * 70,
+                rpm: 6500 + Math.random() * 500,
+                ecuTemp: 85 + Math.random() * 15,
+                isLive: false,
+              }),
+            100,
+          ),
+        ),
+
+        // Simulate car meet data fetch
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                title: "Birmingham ECU Meet",
+                location: "Birmingham City Centre",
+                attendees: 45 + Math.floor(Math.random() * 10),
+                date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                isLive: false,
+              }),
+            150,
+          ),
+        ),
+
+        // Simulate stats data fetch
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                totalUsers: 1247 + Math.floor(Math.random() * 50),
+                activeDealers: 89 + Math.floor(Math.random() * 5),
+                completedJobs: 3456 + Math.floor(Math.random() * 100),
+                monthlyRevenue: 45670 + Math.floor(Math.random() * 10000),
+              }),
+            200,
+          ),
+        ),
+      ])
+
+      if (dynoResponse.status === "fulfilled") {
+        setDynoData(dynoResponse.value as any)
+      }
+      if (carMeetResponse.status === "fulfilled") {
+        setCarMeetData(carMeetResponse.value as any)
+      }
+      if (statsResponse.status === "fulfilled") {
+        setStats(statsResponse.value as any)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching data:", error)
+    }
+  }, [])
+
   const updateDemoData = useCallback(() => {
     setDynoData({
       power: 420 + Math.random() * 50,
@@ -46,13 +109,16 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
     console.log("[v0] HomePage component mounting")
 
-    updateDemoData()
+    fetchAllData()
 
     const interval = setInterval(updateDemoData, 300000) // 5 minutes
     return () => clearInterval(interval)
-  }, [updateDemoData])
+  }, [fetchAllData, updateDemoData])
 
   useEffect(() => {
     const scanningInterval = setInterval(() => {
