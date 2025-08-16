@@ -73,16 +73,19 @@ export async function GET(request: NextRequest) {
       .map(([postcode, count]) => ({ postcode, count }))
 
     const totalRevenue = paymentsResult.data?.length
-      ? paymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
+      ? paymentsResult.data.reduce((sum: number, p: { amount: number | null }) => sum + (p.amount || 0), 0) / 100
       : 0
     const monthlyRevenue = monthlyPaymentsResult.data?.length
-      ? monthlyPaymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0) / 100
+      ? monthlyPaymentsResult.data.reduce((sum: number, p: { amount: number | null }) => sum + (p.amount || 0), 0) / 100
       : 0
 
     const completedJobsData = completedJobsResult.data || []
     const averageJobValue =
       completedJobsData.length > 0
-        ? completedJobsData.reduce((sum, job) => sum + (job.customer_price || 0), 0) / completedJobsData.length
+        ? completedJobsData.reduce(
+            (sum: number, job: { customer_price: number | null }) => sum + (job.customer_price || 0),
+            0,
+          ) / completedJobsData.length
         : 0
 
     const analytics = {
