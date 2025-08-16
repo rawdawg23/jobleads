@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     ])
 
     const monthlyRevenue = paymentsResult.data?.length
-      ? paymentsResult.data.reduce((sum, p) => sum + (p.amount || 0), 0)
+      ? paymentsResult.data.reduce((sum: number, p: { amount: number | null }) => sum + (p.amount || 0), 0)
       : 0
 
     const stats = {
