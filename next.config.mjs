@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    // Allow builds to complete even with ESLint warnings, but not errors
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // Allow TypeScript errors to be shown during build
+    ignoreBuildErrors: false,
   },
   images: {
     unoptimized: true,
@@ -15,30 +17,17 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   webpack: (config, { isServer }) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      crypto: false,
-      process: false,
-      buffer: false,
-      util: false,
-      stream: false,
-      events: false,
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
     }
     
     return config
   },
-  serverExternalPackages: [
-    '@supabase/supabase-js',
-    '@supabase/realtime-js',
-    '@supabase/ssr',
-    '@supabase/postgrest-js',
-    '@supabase/storage-js',
-    '@supabase/functions-js',
-    '@supabase/gotrue-js'
-  ],
 }
 
 export default nextConfig
