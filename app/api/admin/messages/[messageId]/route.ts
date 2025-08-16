@@ -1,8 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function PATCH(request: NextRequest, { params }: { params: { messageId: string } }) {
+interface RouteParams {
+  params: Promise<{ messageId: string }>
+}
+
+export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
+    const { messageId } = await context.params
     const supabase = createClient()
 
     // Check if user is authenticated and is admin
@@ -32,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { messag
         is_active: isActive,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.messageId)
+      .eq("id", messageId)
       .select()
       .single()
 
@@ -48,8 +53,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { messag
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { messageId: string } }) {
+export async function DELETE(request: NextRequest, context: RouteParams) {
   try {
+    const { messageId } = await context.params
     const supabase = createClient()
 
     // Check if user is authenticated and is admin
@@ -70,7 +76,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { messa
     }
 
     // Delete message
-    const { error } = await supabase.from("site_messages").delete().eq("id", params.messageId)
+    const { error } = await supabase.from("site_messages").delete().eq("id", messageId)
 
     if (error) {
       console.error("Error deleting message:", error)
