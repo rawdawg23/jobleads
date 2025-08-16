@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import type { PageProps } from "next"
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -14,7 +15,7 @@ import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
-export default function ChatPage({ params }: { params: Promise<{ jobId: string }> }) {
+export default function ChatPage({ params }: PageProps<{ jobId: string }>) {
   const [loading, setLoading] = useState(true)
   const [job, setJob] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
