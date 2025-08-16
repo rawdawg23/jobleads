@@ -43,9 +43,13 @@ export async function GET(request: NextRequest) {
       ])
 
       const jobs = jobsResult.data || []
-      const completedJobs = jobs.filter((job) => job.status === "completed")
-      const activeJobs = jobs.filter((job) => ["open", "accepted", "in_progress"].includes(job.status))
-      const thisMonthJobs = jobs.filter((job) => new Date(job.created_at) > new Date(thirtyDaysAgo))
+      const completedJobs = jobs.filter((job: { status: string }) => job.status === "completed")
+      const activeJobs = jobs.filter((job: { status: string }) =>
+        ["open", "accepted", "in_progress"].includes(job.status),
+      )
+      const thisMonthJobs = jobs.filter(
+        (job: { created_at: string }) => new Date(job.created_at) > new Date(thirtyDaysAgo),
+      )
 
       stats = {
         totalJobs: jobs.length,
