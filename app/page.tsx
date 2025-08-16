@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { createClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,237 +9,50 @@ import { Menu, X, Zap, Gauge, MapPin, Users, TrendingUp, Settings, Car, Activity
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dynoData, setDynoData] = useState({
-    power: 0,
-    torque: 0,
-    rpm: 0,
-    ecuTemp: 0,
+    power: 420 + Math.random() * 50,
+    torque: 580 + Math.random() * 70,
+    rpm: 6500 + Math.random() * 500,
+    ecuTemp: 85 + Math.random() * 15,
     isLive: false,
   })
   const [carMeetData, setCarMeetData] = useState({
-    title: "",
-    location: "",
-    attendees: 0,
-    date: "",
+    title: "Birmingham ECU Meet",
+    location: "Birmingham City Centre",
+    attendees: 45,
+    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
     isLive: false,
   })
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeDealers: 0,
-    completedJobs: 0,
-    monthlyRevenue: 0,
+    totalUsers: 1247,
+    activeDealers: 89,
+    completedJobs: 3456,
+    monthlyRevenue: 45670,
   })
   const [isScanning, setIsScanning] = useState(false)
 
-  const getSupabaseClient = useCallback(() => {
-    try {
-      return createClient()
-    } catch (error) {
-      console.error("[v0] Failed to create Supabase client:", error)
-      return null
-    }
+  const updateDemoData = useCallback(() => {
+    setDynoData({
+      power: 420 + Math.random() * 50,
+      torque: 580 + Math.random() * 70,
+      rpm: 6500 + Math.random() * 500,
+      ecuTemp: 85 + Math.random() * 15,
+      isLive: false,
+    })
+
+    setStats((prev) => ({
+      ...prev,
+      monthlyRevenue: 45670 + Math.floor(Math.random() * 10000),
+    }))
   }, [])
-
-  const fetchDynoData = useCallback(async () => {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      console.warn("[v0] Supabase client not available for dyno data fetch")
-      setDynoData({
-        power: 420 + Math.random() * 50,
-        torque: 580 + Math.random() * 70,
-        rpm: 6500 + Math.random() * 500,
-        ecuTemp: 85 + Math.random() * 15,
-        isLive: false,
-      })
-      return
-    }
-
-    try {
-      const { data: sessions, error } = await supabase
-        .from("dyno_sessions")
-        .select(`
-          *,
-          sensor_readings (
-            power_hp,
-            torque_nm,
-            rpm,
-            ecu_temp,
-            timestamp
-          )
-        `)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(1)
-
-      if (error) {
-        console.warn("[v0] Dyno data query error (using demo data):", error.message)
-        throw error
-      }
-
-      if (sessions && sessions.length > 0) {
-        const session = sessions[0]
-        const latestReading = session.sensor_readings?.[0]
-
-        if (latestReading) {
-          setDynoData({
-            power: Number(latestReading.power_hp) || 0,
-            torque: Number(latestReading.torque_nm) || 0,
-            rpm: Number(latestReading.rpm) || 0,
-            ecuTemp: Number(latestReading.ecu_temp) || 0,
-            isLive: true,
-          })
-          console.log("[v0] Live dyno data fetched successfully")
-          return
-        }
-      }
-
-      setDynoData({
-        power: 420 + Math.random() * 50,
-        torque: 580 + Math.random() * 70,
-        rpm: 6500 + Math.random() * 500,
-        ecuTemp: 85 + Math.random() * 15,
-        isLive: false,
-      })
-    } catch (error) {
-      console.error("[v0] Error fetching dyno data:", error)
-      setDynoData({
-        power: 420 + Math.random() * 50,
-        torque: 580 + Math.random() * 70,
-        rpm: 6500 + Math.random() * 500,
-        ecuTemp: 85 + Math.random() * 15,
-        isLive: false,
-      })
-    }
-  }, [getSupabaseClient])
-
-  const fetchCarMeetData = useCallback(async () => {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      console.warn("[v0] Supabase client not available for car meet data fetch")
-      setCarMeetData({
-        title: "Birmingham ECU Meet",
-        location: "Birmingham City Centre",
-        attendees: 45,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        isLive: false,
-      })
-      return
-    }
-
-    try {
-      const { data: meets, error } = await supabase
-        .from("car_meet_locations")
-        .select(`
-          *,
-          car_meet_attendees (
-            id,
-            payment_status
-          )
-        `)
-        .eq("status", "active")
-        .gte("event_date", new Date().toISOString())
-        .order("event_date", { ascending: true })
-        .limit(1)
-
-      if (error) {
-        console.warn("[v0] Car meet data query error (using demo data):", error.message)
-        throw error
-      }
-
-      if (meets && meets.length > 0) {
-        const meet = meets[0]
-        const paidAttendees =
-          meet.car_meet_attendees?.filter(
-            (attendee: any) => attendee.payment_status === "paid" || attendee.payment_status === "confirmed",
-          ).length || 0
-
-        setCarMeetData({
-          title: String(meet.title || ""),
-          location: String(meet.location_name || ""),
-          attendees: Number(paidAttendees) || 0,
-          date: new Date(meet.event_date).toLocaleDateString(),
-          isLive: true,
-        })
-        console.log("[v0] Live car meet data fetched successfully")
-        return
-      }
-
-      setCarMeetData({
-        title: "Birmingham ECU Meet",
-        location: "Birmingham City Centre",
-        attendees: 45,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        isLive: false,
-      })
-    } catch (error) {
-      console.error("[v0] Error fetching car meet data:", error)
-      setCarMeetData({
-        title: "Birmingham ECU Meet",
-        location: "Birmingham City Centre",
-        attendees: 45,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        isLive: false,
-      })
-    }
-  }, [getSupabaseClient])
-
-  const fetchStats = useCallback(async () => {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      console.warn("[v0] Supabase client not available for stats fetch")
-      setStats({
-        totalUsers: 1247,
-        activeDealers: 89,
-        completedJobs: 3456,
-        monthlyRevenue: 45670,
-      })
-      return
-    }
-
-    try {
-      const [usersResult, companiesResult, jobsResult] = await Promise.allSettled([
-        supabase.from("users").select("id", { count: "exact", head: true }),
-        supabase.from("companies").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "completed"),
-      ])
-
-      const totalUsers = usersResult.status === "fulfilled" ? usersResult.value.count || 0 : 1247
-      const activeDealers = companiesResult.status === "fulfilled" ? companiesResult.value.count || 0 : 89
-      const completedJobs = jobsResult.status === "fulfilled" ? jobsResult.value.count || 0 : 3456
-
-      setStats({
-        totalUsers: Number(totalUsers) || 1247,
-        activeDealers: Number(activeDealers) || 89,
-        completedJobs: Number(completedJobs) || 3456,
-        monthlyRevenue: 45670 + Math.floor(Math.random() * 10000),
-      })
-    } catch (error) {
-      console.error("[v0] Error fetching stats:", error)
-      setStats({
-        totalUsers: 1247,
-        activeDealers: 89,
-        completedJobs: 3456,
-        monthlyRevenue: 45670,
-      })
-    }
-  }, [getSupabaseClient])
 
   useEffect(() => {
     console.log("[v0] HomePage component mounting")
 
-    const fetchAllData = async () => {
-      try {
-        await Promise.allSettled([fetchDynoData(), fetchCarMeetData(), fetchStats()])
-        console.log("[v0] Initial data fetch completed")
-      } catch (error) {
-        console.error("[v0] Error in initial fetchAllData:", error)
-      }
-    }
+    updateDemoData()
 
-    fetchAllData()
-
-    const interval = setInterval(fetchAllData, 300000) // 5 minutes
+    const interval = setInterval(updateDemoData, 300000) // 5 minutes
     return () => clearInterval(interval)
-  }, [fetchDynoData, fetchCarMeetData, fetchStats])
+  }, [updateDemoData])
 
   useEffect(() => {
     const scanningInterval = setInterval(() => {

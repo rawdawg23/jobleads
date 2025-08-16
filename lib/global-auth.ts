@@ -45,7 +45,12 @@ function ensureInitialized() {
     }
   }
 
-  if (globalSupabase && globalSupabase.auth && !globalAuthSubscription) {
+  if (
+    globalSupabase &&
+    globalSupabase.auth &&
+    typeof globalSupabase.auth.onAuthStateChange === "function" &&
+    !globalAuthSubscription
+  ) {
     try {
       globalAuthSubscription = globalSupabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
         console.log("[v0] Global auth state change:", event, session ? "with session" : "no session")
@@ -63,6 +68,9 @@ function ensureInitialized() {
       console.error("[v0] Failed to create auth subscription:", error)
       globalAuthState.loading = false
     }
+  } else {
+    console.warn("[v0] Supabase auth not available, skipping subscription setup")
+    globalAuthState.loading = false
   }
 
   globalAuthState.loading = false
@@ -129,7 +137,7 @@ export function getGlobalSupabase() {
 
   ensureInitialized()
 
-  if (!globalSupabase || !globalSupabase.auth) {
+  if (!globalSupabase || !globalSupabase.auth || typeof globalSupabase.auth.signInWithPassword !== "function") {
     console.warn("[v0] Global Supabase client not properly initialized, returning fallback")
     return {
       auth: {
