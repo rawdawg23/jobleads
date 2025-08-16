@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function PATCH(request: NextRequest, { params }: { params: { paymentId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ paymentId: string }> }) {
   try {
     const supabase = createClient()
 
@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { paymen
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { paymentId } = params
+    const { paymentId } = await params
     const { status, admin_notes } = await request.json()
 
     if (!status) {
