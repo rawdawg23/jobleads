@@ -180,7 +180,7 @@ export default function AdminDashboardPage() {
         .order("created_at", { ascending: false })
         .limit(3)
 
-      recentJobs?.forEach((job) => {
+      recentJobs?.forEach((job: { id: string; title: string; created_at: string }) => {
         activities.push({
           id: `job_${job.id}`,
           type: "job_posted",
