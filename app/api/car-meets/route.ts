@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   try {
@@ -31,13 +32,13 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("Database error:", error)
-      return Response.json({ error: "Failed to fetch car meets" }, { status: 500 })
+      return NextResponse.json({ error: "Failed to fetch car meets" }, { status: 500 })
     }
 
-    return Response.json({ carMeets })
+    return NextResponse.json({ carMeets })
   } catch (error) {
     console.error("Car meets API error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const meetData = await request.json()
@@ -76,12 +77,12 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("Database error:", error)
-      return Response.json({ error: "Failed to create car meet" }, { status: 500 })
+      return NextResponse.json({ error: "Failed to create car meet" }, { status: 500 })
     }
 
-    return Response.json({ success: true, meet: newMeet })
+    return NextResponse.json({ success: true, meet: newMeet })
   } catch (error) {
     console.error("Create car meet error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
