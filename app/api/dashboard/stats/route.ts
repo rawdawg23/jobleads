@@ -74,14 +74,16 @@ export async function GET(request: NextRequest) {
         .order("created_at", { ascending: false })
         .limit(5)
 
-      recentActivity = (recentJobs || []).map((job) => ({
-        id: job.id,
-        type: "job_posted" as const,
-        title: `${job.make} ${job.model} ECU Remap`,
-        description: `Job status: ${job.status}`,
-        timestamp: new Date(job.created_at).toLocaleDateString(),
-        status: job.status,
-      }))
+      recentActivity = (recentJobs || []).map(
+        (job: { id: string; status: string; created_at: string; make: string; model: string }) => ({
+          id: job.id,
+          type: "job_posted" as const,
+          title: `${job.make} ${job.model} ECU Remap`,
+          description: `Job status: ${job.status}`,
+          timestamp: new Date(job.created_at).toLocaleDateString(),
+          status: job.status,
+        }),
+      )
     } else if (profile.role === "dealer") {
       const { data: dealer } = await supabase.from("dealers").select("id").eq("user_id", user.id).single()
 
