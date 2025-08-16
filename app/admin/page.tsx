@@ -196,14 +196,16 @@ export default function AdminDashboardPage() {
         .order("created_at", { ascending: false })
         .limit(3)
 
-      recentBookings?.forEach((booking) => {
-        activities.push({
-          id: `booking_${booking.id}`,
-          type: "booking_created",
-          description: `New ECU remapping booking by ${booking.users?.first_name} ${booking.users?.last_name}`,
-          timestamp: booking.created_at,
-        })
-      })
+      recentBookings?.forEach(
+        (booking: { id: string; created_at: string; users: { first_name: string; last_name: string } | null }) => {
+          activities.push({
+            id: `booking_${booking.id}`,
+            type: "booking_created",
+            description: `New ECU remapping booking by ${booking.users?.first_name} ${booking.users?.last_name}`,
+            timestamp: booking.created_at,
+          })
+        },
+      )
 
       // Sort all activities by timestamp
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
