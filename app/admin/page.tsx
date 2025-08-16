@@ -161,15 +161,17 @@ export default function AdminDashboardPage() {
         .order("created_at", { ascending: false })
         .limit(5)
 
-      recentUsers?.forEach((user) => {
-        activities.push({
-          id: `user_${user.id}`,
-          type: "user_registration",
-          description: `New ${user.role} registered: ${user.first_name} ${user.last_name}`,
-          timestamp: user.created_at,
-          user_name: `${user.first_name} ${user.last_name}`,
-        })
-      })
+      recentUsers?.forEach(
+        (user: { id: string; first_name: string; last_name: string; created_at: string; role: string }) => {
+          activities.push({
+            id: `user_${user.id}`,
+            type: "user_registration",
+            description: `New ${user.role} registered: ${user.first_name} ${user.last_name}`,
+            timestamp: user.created_at,
+            user_name: `${user.first_name} ${user.last_name}`,
+          })
+        },
+      )
 
       // Recent job postings
       const { data: recentJobs } = await supabase
