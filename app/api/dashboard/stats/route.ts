@@ -57,7 +57,11 @@ export async function GET(request: NextRequest) {
         completedJobs: completedJobs.length,
         totalMessages: messagesResult.data?.length || 0,
         pendingApplications: 0,
-        totalEarnings: (paymentsResult.data || []).reduce((sum, payment) => sum + (payment.amount || 0), 0) / 100,
+        totalEarnings:
+          (paymentsResult.data || []).reduce(
+            (sum: number, payment: { amount: number | null }) => sum + (payment.amount || 0),
+            0,
+          ) / 100,
         thisMonthJobs: thisMonthJobs.length,
         successRate: jobs.length > 0 ? Math.round((completedJobs.length / jobs.length) * 100) : 0,
       }
@@ -106,7 +110,10 @@ export async function GET(request: NextRequest) {
           completedJobs: completedApplications.length,
           totalMessages: messagesResult.data?.length || 0,
           pendingApplications: applications.filter((app) => app.status === "pending").length,
-          totalEarnings: completedApplications.reduce((sum, app) => sum + (app.quote || 0), 0),
+          totalEarnings: completedApplications.reduce(
+            (sum: number, app: { quote: number | null }) => sum + (app.quote || 0),
+            0,
+          ),
           thisMonthJobs: thisMonthApplications.length,
           successRate:
             applications.length > 0 ? Math.round((completedApplications.length / applications.length) * 100) : 0,
@@ -131,7 +138,11 @@ export async function GET(request: NextRequest) {
         supabase.from("dealers").select("*", { count: "exact", head: true }),
       ])
 
-      const totalRevenue = (paymentsResult.data || []).reduce((sum, payment) => sum + (payment.amount || 0), 0) / 100
+      const totalRevenue =
+        (paymentsResult.data || []).reduce(
+          (sum: number, payment: { amount: number | null }) => sum + (payment.amount || 0),
+          0,
+        ) / 100
 
       stats = {
         totalJobs: jobsResult.count || 0,
